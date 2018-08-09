@@ -13,6 +13,10 @@ before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - dep ensure
 
+cache:
+  directories:
+  - vendor
+
 script:
 - diff -u <(echo -n) <(gofmt -d .)
 - go tool vet .
