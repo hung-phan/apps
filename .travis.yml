@@ -4,10 +4,7 @@ language: go
 
 matrix:
   include:
-  - go: 1.8.x
-  - go: 1.9.x
   - go: 1.10.x
-  - go: tip
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
