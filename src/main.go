@@ -1,18 +1,10 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/hung-phan/chat-app/src/application"
 	"net/http"
 )
 
-func startWebserver() {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/ws", WebSocketHandler)
-
-	http.ListenAndServe("localhost:3000", r)
-}
-
 func main() {
-	startWebserver()
+	http.ListenAndServe("localhost:3000", application.CreateRouter())
 }
