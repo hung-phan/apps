@@ -4,9 +4,11 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
 	"log"
+	"sync"
 )
 
 type Client struct {
+	once    sync.Once
 	hub     *Hub
 	id      ksuid.KSUID
 	Conn    *websocket.Conn
@@ -14,12 +16,16 @@ type Client struct {
 	Receive chan []byte
 }
 
+func (client *Client) cleanUp() {
+	client.Conn.Close()
+	client.hub.Del(client.id)
+
+	close(client.Send)
+	close(client.Receive)
+}
+
 func (client *Client) readPump() {
-	defer func() {
-		close(client.Receive)
-		client.Conn.Close()
-		client.hub.Del(client.id)
-	}()
+	defer client.once.Do(client.cleanUp)
 
 	for {
 		_, data, err := client.Conn.ReadMessage()
@@ -36,17 +42,13 @@ func (client *Client) readPump() {
 }
 
 func (client *Client) writePump() {
-	defer func() {
-		close(client.Send)
-		client.Conn.Close()
-		client.hub.Del(client.id)
-	}()
+	defer client.once.Do(client.cleanUp)
 
 	for data := range client.Send {
 		err := client.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			log.Printf("error: %v", err)
+			log.Fatalf("error: %v\n", err)
 		}
 	}
 

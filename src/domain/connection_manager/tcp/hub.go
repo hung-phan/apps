@@ -1,26 +1,25 @@
-package ws
+package tcp
 
 import (
-	"github.com/segmentio/ksuid"
 	"sync"
 )
 
 var DefaultHub = NewHub()
 
 type Hub struct {
-	Conns         map[ksuid.KSUID]*Client
+	Conns         map[string]*Client
 	BroadcastChan chan []byte
 	m             sync.RWMutex
 }
 
-func (hub *Hub) Set(key ksuid.KSUID, client *Client) {
+func (hub *Hub) Set(key string, client *Client) {
 	hub.m.Lock()
 	defer hub.m.Unlock()
 
 	hub.Conns[key] = client
 }
 
-func (hub *Hub) Get(key ksuid.KSUID) (*Client, bool) {
+func (hub *Hub) Get(key string) (*Client, bool) {
 	hub.m.RLock()
 	defer hub.m.RUnlock()
 
@@ -33,7 +32,7 @@ func (hub *Hub) Get(key ksuid.KSUID) (*Client, bool) {
 	}
 }
 
-func (hub *Hub) Del(key ksuid.KSUID) {
+func (hub *Hub) Del(key string) {
 	hub.m.Lock()
 	defer hub.m.Unlock()
 
