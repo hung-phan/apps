@@ -4,70 +4,67 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
 	"log"
-	"sync"
 )
 
 type WSClient struct {
+	Client
+	ChannelCommunication
+
 	Conn *websocket.Conn
-
-	once      sync.Once
-	hub       *Hub
-	id        string
-	sendCh    chan []byte
-	receiveCh chan []byte
 }
 
-func (client *WSClient) GetChannels() (chan []byte, chan []byte) {
-	return client.sendCh, client.receiveCh
+func (wsClient *WSClient) CleanUp() {
+	wsClient.sendCloseSignal()
+	wsClient.CloseAllChannels()
+	wsClient.hub.Del(wsClient.id)
+	wsClient.Conn.Close()
 }
 
-func (client *WSClient) CleanUp() {
-	close(client.receiveCh)
-	close(client.sendCh)
-
-	client.hub.Del(client.id)
-	client.Conn.Close()
+func (wsClient *WSClient) sendCloseSignal() error {
+	return wsClient.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
-func (client *WSClient) readPump() {
-	defer client.once.Do(client.CleanUp)
+func (wsClient *WSClient) readPump() {
+	defer wsClient.once.Do(wsClient.CleanUp)
 
 	for {
-		_, data, err := client.Conn.ReadMessage()
+		_, data, err := wsClient.Conn.ReadMessage()
 
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Fatalln("error:", err)
 			}
-			break
+			return
 		}
 
-		client.receiveCh <- data
+		wsClient.ReceiveCh <- data
 	}
 }
 
-func (client *WSClient) writePump() {
-	defer client.once.Do(client.CleanUp)
+func (wsClient *WSClient) writePump() {
+	defer wsClient.once.Do(wsClient.CleanUp)
 
-	for data := range client.sendCh {
-		err := client.Conn.WriteMessage(websocket.TextMessage, data)
+	for data := range wsClient.SendCh {
+		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
 			log.Fatalln("error:", err)
+			return
 		}
 	}
-
-	// write close signal
-	client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 func NewWSClient(hub *Hub, id ksuid.KSUID, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
-		Conn:      conn,
-		hub:       hub,
-		id:        id.String(),
-		sendCh:    make(chan []byte, 256),
-		receiveCh: make(chan []byte, 256),
+		Client: Client{
+			hub: hub,
+			id:  id.String(),
+		},
+		ChannelCommunication: ChannelCommunication{
+			SendCh:    make(chan []byte, 256),
+			ReceiveCh: make(chan []byte, 256),
+		},
+		Conn: conn,
 	}
 
 	hub.Set(id.String(), client)

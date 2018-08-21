@@ -49,9 +49,8 @@ func (hub *Hub) Listen() {
 		hub.m.RLock()
 
 		for _, client := range hub.Conns {
-			sendCh, _ := client.GetChannels()
 			go func() {
-				sendCh <- data
+				client.GetSendChannel() <- data
 			}()
 		}
 

@@ -7,38 +7,27 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
 	"time"
 )
 
 type TCPClient struct {
+	Client
+	ChannelCommunication
+
+	rw   *bufio.ReadWriter
 	Conn *net.TCPConn
-
-	once      sync.Once
-	hub       *Hub
-	id        string
-	rw        *bufio.ReadWriter
-	sendCh    chan []byte
-	receiveCh chan []byte
 }
 
-func (client *TCPClient) GetChannels() (chan []byte, chan []byte) {
-	return client.sendCh, client.receiveCh
+func (tcpClient *TCPClient) CleanUp() {
+	tcpClient.CloseAllChannels()
+	tcpClient.hub.Del(tcpClient.id)
+	tcpClient.Conn.Close()
 }
 
-func (client *TCPClient) CleanUp() {
+func (tcpClient *TCPClient) readPump() {
+	defer tcpClient.once.Do(tcpClient.CleanUp)
 
-	close(client.sendCh)
-	close(client.receiveCh)
-
-	client.hub.Del(client.id)
-	client.Conn.Close()
-}
-
-func (client *TCPClient) readPump() {
-	defer client.once.Do(client.CleanUp)
-
-	rw := bufio.NewReadWriter(bufio.NewReader(client.Conn), bufio.NewWriter(client.Conn))
+	rw := bufio.NewReadWriter(bufio.NewReader(tcpClient.Conn), bufio.NewWriter(tcpClient.Conn))
 
 	// Read from the connection until EOF. Expect a command name as the
 	// next input. Call the handler that is registered for this command.
@@ -55,18 +44,19 @@ func (client *TCPClient) readPump() {
 		}
 
 		// Trim the request string - ReadString does not strip any newlines.
-		client.receiveCh <- cmd[:len(cmd)-1]
+		tcpClient.ReceiveCh <- cmd[:len(cmd)-1]
 	}
 }
 
-func (client *TCPClient) writePump() {
-	defer client.once.Do(client.CleanUp)
+func (tcpClient *TCPClient) writePump() {
+	defer tcpClient.once.Do(tcpClient.CleanUp)
 
-	for data := range client.sendCh {
-		_, err := client.rw.Write(data)
+	for data := range tcpClient.SendCh {
+		_, err := tcpClient.rw.Write(data)
 
 		if err != nil {
 			log.Fatalln("error:", err)
+			return
 		}
 	}
 }
@@ -105,15 +95,21 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 	return conn, nil
 }
 
-func NewTCPClient(hub *Hub, id string, conn *net.TCPConn) *TCPClient {
+func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
-		Conn:      conn,
-		hub:       hub,
-		id:        id,
-		rw:        bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
-		sendCh:    make(chan []byte, 256),
-		receiveCh: make(chan []byte, 256),
+		Client: Client{
+			hub: hub,
+			id:  address,
+		},
+		ChannelCommunication: ChannelCommunication{
+			SendCh:    make(chan []byte, 256),
+			ReceiveCh: make(chan []byte, 256),
+		},
+		Conn: conn,
+		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
 	}
+
+	hub.Set(address, client)
 
 	go client.readPump()
 	go client.writePump()
