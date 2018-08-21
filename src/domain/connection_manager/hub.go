@@ -1,25 +1,26 @@
-package tcp
+package connection_manager
 
-import (
-	"sync"
+import "sync"
+
+var (
+	DefaultWSHub  = NewHub()
+	DefaultTCPHub = NewHub()
 )
 
-var DefaultHub = NewHub()
-
 type Hub struct {
-	Conns         map[string]*Client
-	BroadcastChan chan []byte
 	m             sync.RWMutex
+	Conns         map[string]IClient
+	BroadcastChan chan []byte
 }
 
-func (hub *Hub) Set(key string, client *Client) {
+func (hub *Hub) Set(key string, client IClient) {
 	hub.m.Lock()
 	defer hub.m.Unlock()
 
 	hub.Conns[key] = client
 }
 
-func (hub *Hub) Get(key string) (*Client, bool) {
+func (hub *Hub) Get(key string) (IClient, bool) {
 	hub.m.RLock()
 	defer hub.m.RUnlock()
 
@@ -48,8 +49,9 @@ func (hub *Hub) Listen() {
 		hub.m.RLock()
 
 		for _, client := range hub.Conns {
+			sendCh, _ := client.GetChannels()
 			go func() {
-				client.Send <- data
+				sendCh <- data
 			}()
 		}
 
@@ -62,7 +64,10 @@ func (hub *Hub) StopListening() {
 }
 
 func NewHub() *Hub {
-	hub := &Hub{BroadcastChan: make(chan []byte, 256)}
+	hub := &Hub{
+		Conns:         make(map[string]IClient),
+		BroadcastChan: make(chan []byte, 256),
+	}
 
 	go hub.Listen()
 
