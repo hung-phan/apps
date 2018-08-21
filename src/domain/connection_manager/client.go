@@ -11,25 +11,25 @@ type IChannelCommunication interface {
 type IClient interface {
 	IChannelCommunication
 
-	CleanUp()
+	cleanUp()
 }
 
 type ChannelCommunication struct {
-	SendCh    chan []byte
-	ReceiveCh chan []byte
+	sendCh    chan []byte
+	receiveCh chan []byte
 }
 
 func (cc *ChannelCommunication) GetSendChannel() chan []byte {
-	return cc.SendCh
+	return cc.sendCh
 }
 
 func (cc *ChannelCommunication) GetReceiveChannel() chan []byte {
-	return cc.SendCh
+	return cc.sendCh
 }
 
 func (cc *ChannelCommunication) CloseAllChannels() {
-	close(cc.SendCh)
-	close(cc.ReceiveCh)
+	close(cc.sendCh)
+	close(cc.receiveCh)
 }
 
 type Client struct {

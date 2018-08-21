@@ -17,9 +17,7 @@ var (
 )
 
 func handleRequest(client *connection_manager.WSClient) {
-	_, receiveCh := client.GetChannels()
-
-	for data := range receiveCh {
+	for data := range client.GetReceiveChannel() {
 		log.Println("receive data", data)
 	}
 }

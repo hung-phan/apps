@@ -18,14 +18,14 @@ type TCPClient struct {
 	Conn *net.TCPConn
 }
 
-func (tcpClient *TCPClient) CleanUp() {
+func (tcpClient *TCPClient) cleanUp() {
 	tcpClient.CloseAllChannels()
 	tcpClient.hub.Del(tcpClient.id)
 	tcpClient.Conn.Close()
 }
 
 func (tcpClient *TCPClient) readPump() {
-	defer tcpClient.once.Do(tcpClient.CleanUp)
+	defer tcpClient.once.Do(tcpClient.cleanUp)
 
 	rw := bufio.NewReadWriter(bufio.NewReader(tcpClient.Conn), bufio.NewWriter(tcpClient.Conn))
 
@@ -44,14 +44,14 @@ func (tcpClient *TCPClient) readPump() {
 		}
 
 		// Trim the request string - ReadString does not strip any newlines.
-		tcpClient.ReceiveCh <- cmd[:len(cmd)-1]
+		tcpClient.receiveCh <- cmd[:len(cmd)-1]
 	}
 }
 
 func (tcpClient *TCPClient) writePump() {
-	defer tcpClient.once.Do(tcpClient.CleanUp)
+	defer tcpClient.once.Do(tcpClient.cleanUp)
 
-	for data := range tcpClient.SendCh {
+	for data := range tcpClient.sendCh {
 		_, err := tcpClient.rw.Write(data)
 
 		if err != nil {
@@ -102,8 +102,8 @@ func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 			id:  address,
 		},
 		ChannelCommunication: ChannelCommunication{
-			SendCh:    make(chan []byte, 256),
-			ReceiveCh: make(chan []byte, 256),
+			sendCh:    make(chan []byte, 256),
+			receiveCh: make(chan []byte, 256),
 		},
 		Conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),

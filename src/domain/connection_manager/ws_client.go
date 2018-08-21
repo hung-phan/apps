@@ -13,7 +13,7 @@ type WSClient struct {
 	Conn *websocket.Conn
 }
 
-func (wsClient *WSClient) CleanUp() {
+func (wsClient *WSClient) cleanUp() {
 	wsClient.sendCloseSignal()
 	wsClient.CloseAllChannels()
 	wsClient.hub.Del(wsClient.id)
@@ -25,7 +25,7 @@ func (wsClient *WSClient) sendCloseSignal() error {
 }
 
 func (wsClient *WSClient) readPump() {
-	defer wsClient.once.Do(wsClient.CleanUp)
+	defer wsClient.once.Do(wsClient.cleanUp)
 
 	for {
 		_, data, err := wsClient.Conn.ReadMessage()
@@ -37,14 +37,14 @@ func (wsClient *WSClient) readPump() {
 			return
 		}
 
-		wsClient.ReceiveCh <- data
+		wsClient.receiveCh <- data
 	}
 }
 
 func (wsClient *WSClient) writePump() {
-	defer wsClient.once.Do(wsClient.CleanUp)
+	defer wsClient.once.Do(wsClient.cleanUp)
 
-	for data := range wsClient.SendCh {
+	for data := range wsClient.sendCh {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
@@ -61,8 +61,8 @@ func NewWSClient(hub *Hub, id ksuid.KSUID, conn *websocket.Conn) *WSClient {
 			id:  id.String(),
 		},
 		ChannelCommunication: ChannelCommunication{
-			SendCh:    make(chan []byte, 256),
-			ReceiveCh: make(chan []byte, 256),
+			sendCh:    make(chan []byte, 256),
+			receiveCh: make(chan []byte, 256),
 		},
 		Conn: conn,
 	}
