@@ -7,12 +7,12 @@ import (
 )
 
 func HandleIncomingMessage(connectionType string, client infrastructure.IClient) {
-	channel := client.GetReceiveChannel()
+	receiveCh, sendCh := client.GetReceiveChannel(), client.GetSendChannel()
 
 	log.Println("connection type:", connectionType)
 
-	for data := range channel {
-		log.Println("receive data:", data)
+	for data := range receiveCh {
+		sendCh <- data
 	}
 }
 
