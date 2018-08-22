@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"sync"
@@ -74,10 +74,10 @@ func (tcpClient *TCPClient) readPump() {
 
 		switch {
 		case err == io.EOF:
-			log.Println("reached EOF - close this connection")
+			logrus.Println("reached EOF - close this connection")
 			return
 		case err != nil:
-			log.Println("Error reading command. Got:", err)
+			logrus.Println("Error reading command. Got:", err)
 			return
 		}
 
@@ -93,7 +93,7 @@ func (tcpClient *TCPClient) writePump() {
 		_, err := tcpClient.rw.Write(data)
 
 		if err != nil {
-			log.Println("error:", err)
+			logrus.Println("error:", err)
 			return
 		}
 	}
@@ -130,7 +130,7 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				log.Println("error:", err)
+				logrus.Println("error:", err)
 			}
 			return
 		}
@@ -146,7 +146,7 @@ func (wsClient *WSClient) writePump() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			log.Println("error:", err)
+			logrus.Println("error:", err)
 			return
 		}
 	}

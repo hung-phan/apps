@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/hung-phan/chat-app/src/application"
 	"github.com/hung-phan/chat-app/src/infrastructure"
-	"log"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +20,7 @@ func main() {
 
 	sig := <-gracefulStop
 
-	log.Printf("caught sig: %+v", sig)
+	logrus.Printf("caught sig: %+v", sig)
 
 	os.Exit(0)
 }

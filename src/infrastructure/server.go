@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 )
@@ -29,7 +29,7 @@ func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWri
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			log.Println("upgrade:", err)
+			logrus.Println("upgrade:", err)
 			return
 		}
 
@@ -47,15 +47,15 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
-		log.Fatalln("unable to establish TCP server on", address)
+		logrus.Fatalln("unable to establish TCP server on", address)
 	}
 
-	log.Println(">> start TCP server at", address)
+	logrus.Println(">> start TCP server at", address)
 	for {
 		conn, err := listener.Accept()
 
 		if err != nil {
-			log.Println("failed accepting a connection request:", err)
+			logrus.Println("failed accepting a connection request:", err)
 			continue
 		}
 
@@ -70,7 +70,7 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 }
 
 func StartHTTPServer(address string, router *mux.Router) error {
-	log.Println(">> start HTTP server at", address)
+	logrus.Println(">> start HTTP server at", address)
 
 	return http.ListenAndServe(address, router)
 }

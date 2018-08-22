@@ -3,13 +3,13 @@ package application
 import (
 	"github.com/gorilla/mux"
 	"github.com/hung-phan/chat-app/src/infrastructure"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func HandleIncomingMessage(connectionType string, client infrastructure.IClient) {
 	receiveCh, sendCh := client.GetReceiveChannel(), client.GetSendChannel()
 
-	log.Println("connection type:", connectionType)
+	logrus.Println("connection type:", connectionType)
 
 	for data := range receiveCh {
 		sendCh <- data
