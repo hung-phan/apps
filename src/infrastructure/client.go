@@ -2,13 +2,13 @@ package infrastructure
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net"
 	"sync"
-	"errors"
-	"fmt"
 	"time"
 )
 
@@ -124,7 +124,12 @@ func (wsClient *WSClient) readPump() {
 		_, data, err := wsClient.Conn.ReadMessage()
 
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseNoStatusReceived,
+				websocket.CloseAbnormalClosure,
+			) {
 				log.Println("error:", err)
 			}
 			return
