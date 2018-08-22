@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/hung-phan/chat-app/src/application"
+	"github.com/hung-phan/chat-app/src/infrastructure"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"fmt"
-	"github.com/hung-phan/chat-app/src/infrastructure"
-	"github.com/hung-phan/chat-app/src/application"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 
 	sig := <-gracefulStop
 
-	fmt.Printf("caught sig: %+v", sig)
+	log.Printf("caught sig: %+v", sig)
 
 	os.Exit(0)
 }

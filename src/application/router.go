@@ -3,7 +3,7 @@ package application
 import (
 	"github.com/gorilla/mux"
 	"github.com/hung-phan/chat-app/src/infrastructure"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 func HandleIncomingMessage(connectionType string, client infrastructure.IClient) {

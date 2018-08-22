@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 )
