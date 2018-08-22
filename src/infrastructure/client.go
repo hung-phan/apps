@@ -1,18 +1,56 @@
-package connection_manager
+package infrastructure
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
+type IChannelCommunication interface {
+	GetSendChannel() chan []byte
+	GetReceiveChannel() chan []byte
+	CloseAllChannels()
+}
+
+type IClient interface {
+	IChannelCommunication
+
+	cleanUp()
+}
+
+type ChannelCommunication struct {
+	sendCh    chan []byte
+	receiveCh chan []byte
+}
+
+func (cc *ChannelCommunication) GetSendChannel() chan []byte {
+	return cc.sendCh
+}
+
+func (cc *ChannelCommunication) GetReceiveChannel() chan []byte {
+	return cc.sendCh
+}
+
+func (cc *ChannelCommunication) CloseAllChannels() {
+	close(cc.sendCh)
+	close(cc.receiveCh)
+}
+
+type Client struct {
+	once sync.Once
+	hub  *Hub
+	id   string
+}
+
 type TCPClient struct {
-	Client
-	ChannelCommunication
+	*Client
+	*ChannelCommunication
 
 	rw   *bufio.ReadWriter
 	Conn *net.TCPConn
@@ -97,11 +135,11 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 
 func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
-		Client: Client{
+		Client: &Client{
 			hub: hub,
 			id:  address,
 		},
-		ChannelCommunication: ChannelCommunication{
+		ChannelCommunication: &ChannelCommunication{
 			sendCh:    make(chan []byte, 256),
 			receiveCh: make(chan []byte, 256),
 		},
@@ -110,6 +148,75 @@ func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	}
 
 	hub.Set(address, client)
+
+	go client.readPump()
+	go client.writePump()
+
+	return client
+}
+
+type WSClient struct {
+	*Client
+	*ChannelCommunication
+
+	Conn *websocket.Conn
+}
+
+func (wsClient *WSClient) cleanUp() {
+	wsClient.sendCloseSignal()
+	wsClient.CloseAllChannels()
+	wsClient.hub.Del(wsClient.id)
+	wsClient.Conn.Close()
+}
+
+func (wsClient *WSClient) sendCloseSignal() error {
+	return wsClient.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+}
+
+func (wsClient *WSClient) readPump() {
+	defer wsClient.once.Do(wsClient.cleanUp)
+
+	for {
+		_, data, err := wsClient.Conn.ReadMessage()
+
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Fatalln("error:", err)
+			}
+			return
+		}
+
+		wsClient.receiveCh <- data
+	}
+}
+
+func (wsClient *WSClient) writePump() {
+	defer wsClient.once.Do(wsClient.cleanUp)
+
+	for data := range wsClient.sendCh {
+		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
+
+		if err != nil {
+			log.Fatalln("error:", err)
+			return
+		}
+	}
+}
+
+func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
+	client := &WSClient{
+		Client: &Client{
+			hub: hub,
+			id:  id,
+		},
+		ChannelCommunication: &ChannelCommunication{
+			sendCh:    make(chan []byte, 256),
+			receiveCh: make(chan []byte, 256),
+		},
+		Conn: conn,
+	}
+
+	hub.Set(id, client)
 
 	go client.readPump()
 	go client.writePump()

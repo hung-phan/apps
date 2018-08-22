@@ -1,11 +1,6 @@
-package connection_manager
+package infrastructure
 
 import "sync"
-
-var (
-	DefaultWSHub  = NewHub()
-	DefaultTCPHub = NewHub()
-)
 
 type Hub struct {
 	m             sync.RWMutex

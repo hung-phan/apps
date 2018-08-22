@@ -2,9 +2,10 @@ package main
 
 import (
 	"github.com/hung-phan/chat-app/src/application"
-	"net/http"
+	"github.com/hung-phan/chat-app/src/infrastructure"
 )
 
 func main() {
-	http.ListenAndServe("localhost:3000", application.CreateRouter())
+	go infrastructure.StartTCPServer(":3001", application.HandleIncomingMessage)
+	infrastructure.StartHTTPServer(":3000", application.CreateRouter())
 }
