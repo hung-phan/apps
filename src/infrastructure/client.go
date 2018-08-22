@@ -49,8 +49,8 @@ type Client struct {
 }
 
 type TCPClient struct {
-	Client
-	ChannelCommunication
+	*Client
+	*ChannelCommunication
 
 	rw   *bufio.ReadWriter
 	Conn *net.TCPConn
@@ -100,8 +100,8 @@ func (tcpClient *TCPClient) writePump() {
 }
 
 type WSClient struct {
-	Client
-	ChannelCommunication
+	*Client
+	*ChannelCommunication
 
 	Conn *websocket.Conn
 }
@@ -154,11 +154,11 @@ func (wsClient *WSClient) writePump() {
 
 func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
-		Client: Client{
+		Client: &Client{
 			hub: hub,
 			id:  id,
 		},
-		ChannelCommunication: ChannelCommunication{
+		ChannelCommunication: &ChannelCommunication{
 			sendCh:    make(chan []byte, 256),
 			receiveCh: make(chan []byte, 256),
 		},
@@ -209,11 +209,11 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 
 func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
-		Client: Client{
+		Client: &Client{
 			hub: hub,
 			id:  address,
 		},
-		ChannelCommunication: ChannelCommunication{
+		ChannelCommunication: &ChannelCommunication{
 			sendCh:    make(chan []byte, 256),
 			receiveCh: make(chan []byte, 256),
 		},
