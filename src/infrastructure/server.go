@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
@@ -30,7 +29,7 @@ func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWri
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			log.Fatalln("upgrade:", err)
+			log.Println("upgrade:", err)
 			return
 		}
 
@@ -48,7 +47,7 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
-		panic(fmt.Sprintf("unable to listen on %s", address))
+		log.Fatalln("unable to establish TCP server on", address)
 	}
 
 	log.Println(">> start TCP server at", address)
@@ -56,7 +55,7 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 		conn, err := listener.Accept()
 
 		if err != nil {
-			log.Fatalln("failed accepting a connection request:", err)
+			log.Println("failed accepting a connection request:", err)
 			continue
 		}
 

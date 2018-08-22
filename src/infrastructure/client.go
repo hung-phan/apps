@@ -77,7 +77,7 @@ func (tcpClient *TCPClient) readPump() {
 			log.Println("reached EOF - close this connection")
 			return
 		case err != nil:
-			log.Fatalln("Error reading command. Got:", err)
+			log.Println("Error reading command. Got:", err)
 			return
 		}
 
@@ -93,7 +93,7 @@ func (tcpClient *TCPClient) writePump() {
 		_, err := tcpClient.rw.Write(data)
 
 		if err != nil {
-			log.Fatalln("error:", err)
+			log.Println("error:", err)
 			return
 		}
 	}
@@ -125,7 +125,7 @@ func (wsClient *WSClient) readPump() {
 
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Fatalln("error:", err)
+				log.Println("error:", err)
 			}
 			return
 		}
@@ -141,7 +141,7 @@ func (wsClient *WSClient) writePump() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			log.Fatalln("error:", err)
+			log.Println("error:", err)
 			return
 		}
 	}
