@@ -20,11 +20,11 @@ var (
 			return true
 		},
 	}
-	TCPHub       = NewHub()
-	WebSocketHub = NewHub()
 )
 
 func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWriter, *http.Request) {
+	hub := NewHub()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 
@@ -34,7 +34,7 @@ func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWri
 		}
 
 		client := NewWSClient(
-			WebSocketHub,
+			hub,
 			ksuid.New().String(),
 			conn,
 		)
@@ -50,7 +50,9 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 		logrus.Fatalln("unable to establish TCP server on", address)
 	}
 
+	hub := NewHub()
 	logrus.Println(">> start TCP server at", address)
+
 	for {
 		conn, err := listener.Accept()
 
@@ -60,7 +62,7 @@ func StartTCPServer(address string, handler func(string, IClient)) {
 		}
 
 		client := NewTCPClient(
-			TCPHub,
+			hub,
 			ksuid.New().String(),
 			conn.(*net.TCPConn),
 		)

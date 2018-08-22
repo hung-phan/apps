@@ -19,7 +19,10 @@ func HandleIncomingMessage(connectionType string, client infrastructure.IClient)
 func CreateRouter() *mux.Router {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/ws", infrastructure.CreateWebSocketHandler(HandleIncomingMessage))
+	router.HandleFunc(
+		"/ws",
+		infrastructure.CreateWebSocketHandler(HandleIncomingMessage),
+	)
 
 	return router
 }
