@@ -11,7 +11,7 @@ import (
 
 const (
 	TcpConnection       = "TCP_CONNECTION"
-	WebSocketConnection = "WEBSOCKET_CONNECTION"
+	WebSocketConnection = "WEB_SOCKET_CONNECTION"
 )
 
 var (
