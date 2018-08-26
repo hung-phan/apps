@@ -4,7 +4,7 @@ import "sync"
 
 type Hub struct {
 	m             sync.RWMutex
-	Conns         map[string]IClient
+	Clients       map[string]IClient
 	BroadcastChan chan []byte
 }
 
@@ -12,14 +12,14 @@ func (hub *Hub) Set(key string, client IClient) {
 	hub.m.Lock()
 	defer hub.m.Unlock()
 
-	hub.Conns[key] = client
+	hub.Clients[key] = client
 }
 
 func (hub *Hub) Get(key string) (IClient, bool) {
 	hub.m.RLock()
 	defer hub.m.RUnlock()
 
-	conn, ok := hub.Conns[key]
+	conn, ok := hub.Clients[key]
 
 	if ok {
 		return conn, true
@@ -32,7 +32,7 @@ func (hub *Hub) Del(key string) {
 	hub.m.Lock()
 	defer hub.m.Unlock()
 
-	delete(hub.Conns, key)
+	delete(hub.Clients, key)
 }
 
 func (hub *Hub) Broadcast(data []byte) {
@@ -43,7 +43,7 @@ func (hub *Hub) Listen() {
 	for data := range hub.BroadcastChan {
 		hub.m.RLock()
 
-		for _, client := range hub.Conns {
+		for _, client := range hub.Clients {
 			go func() {
 				client.GetSendChannel() <- data
 			}()
@@ -53,13 +53,17 @@ func (hub *Hub) Listen() {
 	}
 }
 
-func (hub *Hub) StopListening() {
+func (hub *Hub) Shutdown() {
 	close(hub.BroadcastChan)
+
+	for _, client := range hub.Clients {
+		client.CleanUp()
+	}
 }
 
 func NewHub() *Hub {
 	hub := &Hub{
-		Conns:         make(map[string]IClient),
+		Clients:       make(map[string]IClient),
 		BroadcastChan: make(chan []byte, 256),
 	}
 

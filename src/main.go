@@ -3,24 +3,28 @@ package main
 import (
 	"github.com/hung-phan/chat-app/src/application"
 	"github.com/hung-phan/chat-app/src/infrastructure"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 func main() {
+	var (
+		stopSignal     = make(chan os.Signal)
+		tcpStopSignal  = make(chan bool)
+		httpStopSignal = make(chan bool)
+	)
+
+	signal.Notify(stopSignal, syscall.SIGTERM)
+	signal.Notify(stopSignal, syscall.SIGINT)
+
 	go infrastructure.StartHTTPServer(":3000", application.CreateRouter())
-	go infrastructure.StartTCPServer(":3001", application.HandleIncomingMessage)
+	go infrastructure.StartTCPServer(":3001", tcpStopSignal, application.HandleIncomingMessage)
 
-	gracefulStop := make(chan os.Signal)
+	<-stopSignal
 
-	signal.Notify(gracefulStop, syscall.SIGTERM)
-	signal.Notify(gracefulStop, syscall.SIGINT)
-
-	sig := <-gracefulStop
-
-	logrus.Printf("caught sig: %+v", sig)
+	tcpStopSignal <- true
+	httpStopSignal <- true
 
 	os.Exit(0)
 }

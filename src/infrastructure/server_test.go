@@ -1,45 +1,58 @@
 package infrastructure
 
 import (
+	"bufio"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestTCPConnection(t *testing.T) {
 	assertInstance := assert.New(t)
 
 	t.Run("should be able to send and receive message from TCP connection", func(t *testing.T) {
-		const ClientMessage = "Client message"
+		var (
+			tcpStopSignal     = make(chan bool)
+			clientMessage     = "Message from client"
+			serverMessage     = "Message from server"
+			connectionHandler = func(connectionType string, client IClient) {
+				assertInstance.Equal(connectionType, TcpConnection)
 
-		done := make(chan bool)
+				for data := range client.GetReceiveChannel() {
+					assert.Equal(t, string(data), clientMessage)
 
-		go StartTCPServer(":3001", func(connectionType string, client IClient) {
-			receiveCh := client.GetReceiveChannel()
+					client.GetSendChannel() <- []byte(serverMessage)
 
-			assertInstance.Equal(connectionType, TcpConnection)
+					time.Sleep(1 * time.Second)
 
-			for data := range receiveCh {
-				assert.Equal(t, string(data), ClientMessage)
-
-				go client.ScheduleForCleanUp()
+					client.Flush()
+				}
 			}
+			assertError = func(err error) {
+				if err != nil {
+					assertInstance.Fail(err.Error())
+				}
+			}
+		)
 
-			done <- true
-		})
+		go StartTCPServer(":3001", tcpStopSignal, connectionHandler)
 
 		tcpConn, err := CreateTCPConnection(":3001")
+		assertError(err)
 
-		if err != nil {
-			assertInstance.Error(err)
-		}
+		rw := bufio.NewReadWriter(bufio.NewReader(tcpConn), bufio.NewWriter(tcpConn))
 
-		_, err = tcpConn.Write([]byte(ClientMessage + "\n"))
+		_, err = rw.Write([]byte(clientMessage + "\n"))
+		assertError(err)
 
-		if err != nil {
-			assertInstance.Error(err)
-		}
+		err = rw.Flush()
+		assertError(err)
 
-		<-done
-		// shutdown tcp server
+		data, err := rw.ReadBytes('\n')
+		assertError(err)
+
+		assert.Equal(t, string(data[:len(data)-1]), serverMessage)
+
+		tcpStopSignal <- true
 	})
 }

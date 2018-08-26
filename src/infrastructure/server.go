@@ -29,7 +29,7 @@ func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWri
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			logrus.Println("upgrade:", err)
+			logrus.Debug("upgrade:", err)
 			return
 		}
 
@@ -43,36 +43,51 @@ func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWri
 	}
 }
 
-func StartTCPServer(address string, handler func(string, IClient)) {
+func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
-		logrus.Fatalln("unable to establish TCP server on", address)
+		logrus.Fatalln("failed to start server:", err)
 	}
 
-	hub := NewHub()
-	logrus.Println(">> start TCP server at", address)
+	logrus.WithField("address", address).Info("start TCP server")
+
+	var (
+		hub            = NewHub()
+		isShuttingDown = false
+	)
+
+	go func() {
+		<-shutdownSignal
+
+		isShuttingDown = true
+
+		hub.Shutdown()
+		listener.Close()
+	}()
 
 	for {
+		if isShuttingDown {
+			break
+		}
+
 		conn, err := listener.Accept()
 
 		if err != nil {
-			logrus.Println("failed accepting a connection request:", err)
+			logrus.Debug("failed to accept new connection request:", err)
 			continue
 		}
 
-		client := NewTCPClient(
+		go connectionHandler(TcpConnection, NewTCPClient(
 			hub,
 			ksuid.New().String(),
 			conn.(*net.TCPConn),
-		)
-
-		go handler(TcpConnection, client)
+		))
 	}
 }
 
 func StartHTTPServer(address string, router *mux.Router) error {
-	logrus.Println(">> start HTTP server at", address)
+	logrus.Println("start HTTP server at", address)
 
 	return http.ListenAndServe(address, router)
 }

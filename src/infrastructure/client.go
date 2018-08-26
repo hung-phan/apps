@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"io"
 	"net"
 	"sync"
 	"time"
@@ -21,8 +20,8 @@ type IChannelCommunication interface {
 type IClient interface {
 	IChannelCommunication
 
-	ScheduleForCleanUp()
-	cleanUp()
+	Flush() error
+	CleanUp()
 }
 
 type ChannelCommunication struct {
@@ -45,7 +44,7 @@ func (cc *ChannelCommunication) CloseAllChannels() {
 
 type Client struct {
 	once sync.Once
-	hub  *Hub
+	Hub  *Hub
 	id   string
 }
 
@@ -57,48 +56,48 @@ type TCPClient struct {
 	Conn *net.TCPConn
 }
 
-func (tcpClient *TCPClient) ScheduleForCleanUp() {
-	tcpClient.once.Do(tcpClient.cleanUp)
+func (tcpClient *TCPClient) Flush() error {
+	return tcpClient.rw.Flush()
 }
 
-func (tcpClient *TCPClient) cleanUp() {
+func (tcpClient *TCPClient) CleanUp() {
+	tcpClient.once.Do(tcpClient.scheduleForShutdown)
+}
+
+func (tcpClient *TCPClient) scheduleForShutdown() {
 	tcpClient.CloseAllChannels()
-	tcpClient.hub.Del(tcpClient.id)
+
+	tcpClient.Flush()
 	tcpClient.Conn.Close()
+	tcpClient.Hub.Del(tcpClient.id)
 }
 
 func (tcpClient *TCPClient) readPump() {
-	defer tcpClient.ScheduleForCleanUp()
+	defer tcpClient.CleanUp()
 
-	rw := bufio.NewReadWriter(bufio.NewReader(tcpClient.Conn), bufio.NewWriter(tcpClient.Conn))
-
-	// Read from the connection until EOF. Expect a command name as the
-	// next input. Call the handler that is registered for this command.
 	for {
-		cmd, err := rw.ReadBytes('\n')
+		data, err := tcpClient.rw.ReadBytes('\n')
 
-		switch {
-		case err == io.EOF:
-			logrus.Println("reached EOF - close this connection")
-			return
-		case err != nil:
-			logrus.Println("Error reading command. Got:", err)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{"id": tcpClient.id}).Debug(err)
 			return
 		}
 
-		// Trim the request string - ReadString does not strip any newlines.
-		tcpClient.GetReceiveChannel() <- cmd[:len(cmd)-1]
+		// trim the request string - ReadBytes does not strip any newlines
+		tcpClient.GetReceiveChannel() <- data[:len(data)-1]
 	}
 }
 
 func (tcpClient *TCPClient) writePump() {
-	defer tcpClient.ScheduleForCleanUp()
+	defer tcpClient.CleanUp()
 
 	for data := range tcpClient.GetSendChannel() {
-		_, err := tcpClient.rw.Write(data)
+		newData := append(data, '\n')
+
+		_, err := tcpClient.rw.Write(newData)
 
 		if err != nil {
-			logrus.Println("error:", err)
+			logrus.WithFields(logrus.Fields{"id": tcpClient.id}).Debug(err)
 			return
 		}
 	}
@@ -111,15 +110,20 @@ type WSClient struct {
 	Conn *websocket.Conn
 }
 
-func (tcpClient *WSClient) ScheduleForCleanUp() {
-	tcpClient.once.Do(tcpClient.cleanUp)
+func (wsClient *WSClient) Flush() error {
+	return nil
 }
 
-func (wsClient *WSClient) cleanUp() {
+func (wsClient *WSClient) CleanUp() {
+	wsClient.once.Do(wsClient.scheduleForShutdown)
+}
+
+func (wsClient *WSClient) scheduleForShutdown() {
 	wsClient.sendCloseSignal()
 	wsClient.CloseAllChannels()
-	wsClient.hub.Del(wsClient.id)
+
 	wsClient.Conn.Close()
+	wsClient.Hub.Del(wsClient.id)
 }
 
 func (wsClient *WSClient) sendCloseSignal() error {
@@ -127,7 +131,7 @@ func (wsClient *WSClient) sendCloseSignal() error {
 }
 
 func (wsClient *WSClient) readPump() {
-	defer wsClient.ScheduleForCleanUp()
+	defer wsClient.CleanUp()
 
 	for {
 		_, data, err := wsClient.Conn.ReadMessage()
@@ -139,7 +143,7 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				logrus.Println("error:", err)
+				logrus.WithFields(logrus.Fields{"id": wsClient.id}).Debug(err)
 			}
 			return
 		}
@@ -149,13 +153,13 @@ func (wsClient *WSClient) readPump() {
 }
 
 func (wsClient *WSClient) writePump() {
-	defer wsClient.ScheduleForCleanUp()
+	defer wsClient.CleanUp()
 
 	for data := range wsClient.GetSendChannel() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			logrus.Println("error:", err)
+			logrus.WithFields(logrus.Fields{"id": wsClient.id}).Debug(err)
 			return
 		}
 	}
@@ -164,7 +168,7 @@ func (wsClient *WSClient) writePump() {
 func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
 		Client: &Client{
-			hub: hub,
+			Hub: hub,
 			id:  id,
 		},
 		ChannelCommunication: &ChannelCommunication{
@@ -219,7 +223,7 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
 		Client: &Client{
-			hub: hub,
+			Hub: hub,
 			id:  address,
 		},
 		ChannelCommunication: &ChannelCommunication{
