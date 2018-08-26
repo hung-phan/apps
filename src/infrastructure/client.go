@@ -21,6 +21,7 @@ type IChannelCommunication interface {
 type IClient interface {
 	IChannelCommunication
 
+	ScheduleForCleanUp()
 	cleanUp()
 }
 
@@ -34,7 +35,7 @@ func (cc *ChannelCommunication) GetSendChannel() chan []byte {
 }
 
 func (cc *ChannelCommunication) GetReceiveChannel() chan []byte {
-	return cc.sendCh
+	return cc.receiveCh
 }
 
 func (cc *ChannelCommunication) CloseAllChannels() {
@@ -56,6 +57,10 @@ type TCPClient struct {
 	Conn *net.TCPConn
 }
 
+func (tcpClient *TCPClient) ScheduleForCleanUp() {
+	tcpClient.once.Do(tcpClient.cleanUp)
+}
+
 func (tcpClient *TCPClient) cleanUp() {
 	tcpClient.CloseAllChannels()
 	tcpClient.hub.Del(tcpClient.id)
@@ -63,7 +68,7 @@ func (tcpClient *TCPClient) cleanUp() {
 }
 
 func (tcpClient *TCPClient) readPump() {
-	defer tcpClient.once.Do(tcpClient.cleanUp)
+	defer tcpClient.ScheduleForCleanUp()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(tcpClient.Conn), bufio.NewWriter(tcpClient.Conn))
 
@@ -87,7 +92,7 @@ func (tcpClient *TCPClient) readPump() {
 }
 
 func (tcpClient *TCPClient) writePump() {
-	defer tcpClient.once.Do(tcpClient.cleanUp)
+	defer tcpClient.ScheduleForCleanUp()
 
 	for data := range tcpClient.GetSendChannel() {
 		_, err := tcpClient.rw.Write(data)
@@ -106,6 +111,10 @@ type WSClient struct {
 	Conn *websocket.Conn
 }
 
+func (tcpClient *WSClient) ScheduleForCleanUp() {
+	tcpClient.once.Do(tcpClient.cleanUp)
+}
+
 func (wsClient *WSClient) cleanUp() {
 	wsClient.sendCloseSignal()
 	wsClient.CloseAllChannels()
@@ -118,7 +127,7 @@ func (wsClient *WSClient) sendCloseSignal() error {
 }
 
 func (wsClient *WSClient) readPump() {
-	defer wsClient.once.Do(wsClient.cleanUp)
+	defer wsClient.ScheduleForCleanUp()
 
 	for {
 		_, data, err := wsClient.Conn.ReadMessage()
@@ -140,7 +149,7 @@ func (wsClient *WSClient) readPump() {
 }
 
 func (wsClient *WSClient) writePump() {
-	defer wsClient.once.Do(wsClient.cleanUp)
+	defer wsClient.ScheduleForCleanUp()
 
 	for data := range wsClient.GetSendChannel() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
