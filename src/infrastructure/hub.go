@@ -44,9 +44,9 @@ func (hub *Hub) Listen() {
 		hub.m.RLock()
 
 		for _, client := range hub.Clients {
-			go func() {
+			go func(client IClient) {
 				client.GetSendChannel() <- data
-			}()
+			}(client)
 		}
 
 		hub.m.RUnlock()
