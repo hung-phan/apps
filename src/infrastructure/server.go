@@ -15,35 +15,35 @@ const (
 )
 
 var (
-	upgrader = websocket.Upgrader{
+	webSocketUpgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	}
 )
 
-func CreateWebSocketHandler(handler func(string, IClient)) func(http.ResponseWriter, *http.Request) {
+type ConnectionHandler func(string, IClient)
+
+func CreateWebSocketHandler(connectionHandler ConnectionHandler) http.HandlerFunc {
 	hub := NewHub()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
 		if err != nil {
 			logrus.Debug("upgrade:", err)
 			return
 		}
 
-		client := NewWSClient(
+		go connectionHandler(WebSocketConnection, NewWSClient(
 			hub,
 			ksuid.New().String(),
 			conn,
-		)
-
-		go handler(WebSocketConnection, client)
+		))
 	}
 }
 
-func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, IClient)) {
+func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler ConnectionHandler) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {

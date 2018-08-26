@@ -19,7 +19,7 @@ func main() {
 	signal.Notify(stopSignal, syscall.SIGINT)
 
 	go infrastructure.StartHTTPServer(":3000", application.CreateRouter())
-	go infrastructure.StartTCPServer(":3001", tcpStopSignal, application.HandleIncomingMessage)
+	go infrastructure.StartTCPServer(":3001", tcpStopSignal, application.HandleConnection)
 
 	<-stopSignal
 

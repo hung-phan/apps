@@ -57,7 +57,7 @@ func (hub *Hub) Shutdown() {
 	close(hub.BroadcastChan)
 
 	for _, client := range hub.Clients {
-		client.CleanUp()
+		client.Shutdown()
 	}
 }
 
