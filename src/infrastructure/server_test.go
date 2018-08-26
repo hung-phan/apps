@@ -23,7 +23,9 @@ func TestTCPConnection(t *testing.T) {
 
 					client.GetSendChannel() <- []byte(serverMessage)
 
-					time.Sleep(1 * time.Second)
+					// enough time for client to send the message so we can force
+					// the connection to flush it later
+					time.Sleep(100 * time.Millisecond)
 
 					client.Flush()
 				}
