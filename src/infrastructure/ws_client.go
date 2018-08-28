@@ -12,6 +12,7 @@ type WSClient struct {
 	Conn *websocket.Conn
 }
 
+// websocket won't try to do buffering like TCP, so you never need to call Flush() on it
 func (wsClient *WSClient) Flush() error {
 	return nil
 }
