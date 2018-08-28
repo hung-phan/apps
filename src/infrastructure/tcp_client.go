@@ -18,6 +18,9 @@ type TCPClient struct {
 }
 
 func (tcpClient *TCPClient) Flush() error {
+	tcpClient.mutex.Lock()
+	defer tcpClient.mutex.Unlock()
+
 	return tcpClient.rw.Flush()
 }
 
@@ -55,7 +58,9 @@ func (tcpClient *TCPClient) writePump() {
 	for data := range tcpClient.GetSendChannel() {
 		newData := append(data, '\n')
 
+		tcpClient.mutex.Lock()
 		_, err := tcpClient.rw.Write(newData)
+		tcpClient.mutex.Unlock()
 
 		if err != nil {
 			logrus.WithFields(logrus.Fields{"id": tcpClient.id}).Debug(err)

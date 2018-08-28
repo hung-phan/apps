@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
+	"sync"
 )
 
 const (
@@ -54,22 +55,27 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 
 	var (
 		hub            = NewHub()
+		rwMutex        = sync.RWMutex{}
 		isShuttingDown = false
 	)
 
 	go func() {
 		<-shutdownSignal
 
+		rwMutex.Lock()
 		isShuttingDown = true
+		rwMutex.Unlock()
 
 		hub.Shutdown()
 		listener.Close()
 	}()
 
 	for {
+		rwMutex.RLock()
 		if isShuttingDown {
 			break
 		}
+		rwMutex.RUnlock()
 
 		conn, err := listener.Accept()
 

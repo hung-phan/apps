@@ -12,7 +12,8 @@ type IClient interface {
 }
 
 type Client struct {
-	once sync.Once
-	Hub  *Hub
-	id   string
+	mutex sync.Mutex
+	once  sync.Once
+	Hub   *Hub
+	id    string
 }

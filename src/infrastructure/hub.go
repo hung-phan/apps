@@ -3,21 +3,21 @@ package infrastructure
 import "sync"
 
 type Hub struct {
-	m             sync.RWMutex
+	rwMutex       sync.RWMutex
 	Clients       map[string]IClient
 	BroadcastChan chan []byte
 }
 
 func (hub *Hub) Set(key string, client IClient) {
-	hub.m.Lock()
-	defer hub.m.Unlock()
+	hub.rwMutex.Lock()
+	defer hub.rwMutex.Unlock()
 
 	hub.Clients[key] = client
 }
 
 func (hub *Hub) Get(key string) (IClient, bool) {
-	hub.m.RLock()
-	defer hub.m.RUnlock()
+	hub.rwMutex.RLock()
+	defer hub.rwMutex.RUnlock()
 
 	conn, ok := hub.Clients[key]
 
@@ -29,8 +29,8 @@ func (hub *Hub) Get(key string) (IClient, bool) {
 }
 
 func (hub *Hub) Del(key string) {
-	hub.m.Lock()
-	defer hub.m.Unlock()
+	hub.rwMutex.Lock()
+	defer hub.rwMutex.Unlock()
 
 	delete(hub.Clients, key)
 }
@@ -41,7 +41,7 @@ func (hub *Hub) Broadcast(data []byte) {
 
 func (hub *Hub) Listen() {
 	for data := range hub.BroadcastChan {
-		hub.m.RLock()
+		hub.rwMutex.RLock()
 
 		for _, client := range hub.Clients {
 			go func(client IClient) {
@@ -49,7 +49,7 @@ func (hub *Hub) Listen() {
 			}(client)
 		}
 
-		hub.m.RUnlock()
+		hub.rwMutex.RUnlock()
 	}
 }
 
