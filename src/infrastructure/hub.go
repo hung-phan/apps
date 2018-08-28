@@ -3,16 +3,16 @@ package infrastructure
 import "sync"
 
 type Hub struct {
-	rwMutex       sync.RWMutex
-	Clients       map[string]IClient
-	BroadcastChan chan []byte
+	rwMutex     sync.RWMutex
+	clients     map[string]IClient
+	broadcastCh chan []byte
 }
 
 func (hub *Hub) Get(key string) (IClient, bool) {
 	hub.rwMutex.RLock()
 	defer hub.rwMutex.RUnlock()
 
-	conn, ok := hub.Clients[key]
+	conn, ok := hub.clients[key]
 
 	if ok {
 		return conn, true
@@ -25,25 +25,25 @@ func (hub *Hub) Set(key string, client IClient) {
 	hub.rwMutex.Lock()
 	defer hub.rwMutex.Unlock()
 
-	hub.Clients[key] = client
+	hub.clients[key] = client
 }
 
 func (hub *Hub) Del(key string) {
 	hub.rwMutex.Lock()
 	defer hub.rwMutex.Unlock()
 
-	delete(hub.Clients, key)
+	delete(hub.clients, key)
 }
 
 func (hub *Hub) Broadcast(data []byte) {
-	hub.BroadcastChan <- data
+	hub.broadcastCh <- data
 }
 
 func (hub *Hub) listen() {
-	for data := range hub.BroadcastChan {
+	for data := range hub.broadcastCh {
 		hub.rwMutex.RLock()
 
-		for _, client := range hub.Clients {
+		for _, client := range hub.clients {
 			go func(client IClient) {
 				client.GetSendChannel() <- data
 			}(client)
@@ -54,17 +54,17 @@ func (hub *Hub) listen() {
 }
 
 func (hub *Hub) Shutdown() {
-	close(hub.BroadcastChan)
+	close(hub.broadcastCh)
 
-	for _, client := range hub.Clients {
+	for _, client := range hub.clients {
 		client.Shutdown()
 	}
 }
 
 func NewHub() *Hub {
 	hub := &Hub{
-		Clients:       make(map[string]IClient),
-		BroadcastChan: make(chan []byte, 256),
+		clients:     make(map[string]IClient),
+		broadcastCh: make(chan []byte, 256),
 	}
 
 	go hub.listen()

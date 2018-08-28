@@ -22,7 +22,7 @@ func TestServer(t *testing.T) {
 				assertInstance.Equal(connectionType, TcpConnection)
 
 				for data := range client.GetReceiveChannel() {
-					client.GetSendChannel() <- data
+					client.GetHub().Broadcast(data)
 
 					// enough time for client to send the message so we can force
 					// the connection to flush it later
