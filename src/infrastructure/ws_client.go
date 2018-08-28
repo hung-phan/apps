@@ -25,7 +25,7 @@ func (wsClient *WSClient) scheduleForShutdown() {
 	wsClient.CloseAllChannels()
 
 	wsClient.Conn.Close()
-	wsClient.Hub.Del(wsClient.id)
+	wsClient.Hub.Del(wsClient.ID)
 }
 
 func (wsClient *WSClient) sendCloseSignal() error {
@@ -45,7 +45,7 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				logrus.WithFields(logrus.Fields{"id": wsClient.id}).Debug(err)
+				logrus.WithFields(logrus.Fields{"ID": wsClient.ID}).Debug(err)
 			}
 			return
 		}
@@ -61,7 +61,7 @@ func (wsClient *WSClient) writePump() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"id": wsClient.id}).Debug(err)
+			logrus.WithFields(logrus.Fields{"ID": wsClient.ID}).Debug(err)
 			return
 		}
 	}
@@ -71,7 +71,7 @@ func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
 		Client: &Client{
 			Hub: hub,
-			id:  id,
+			ID:  id,
 		},
 		ChannelCommunication: &ChannelCommunication{
 			sendCh:    make(chan []byte, 256),

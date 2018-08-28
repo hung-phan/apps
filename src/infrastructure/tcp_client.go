@@ -33,7 +33,7 @@ func (tcpClient *TCPClient) scheduleForShutdown() {
 
 	tcpClient.Flush()
 	tcpClient.Conn.Close()
-	tcpClient.Hub.Del(tcpClient.id)
+	tcpClient.Hub.Del(tcpClient.ID)
 }
 
 func (tcpClient *TCPClient) readPump() {
@@ -43,7 +43,7 @@ func (tcpClient *TCPClient) readPump() {
 		data, err := tcpClient.rw.ReadBytes('\n')
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"id": tcpClient.id}).Debug(err)
+			logrus.WithFields(logrus.Fields{"ID": tcpClient.ID}).Debug(err)
 			return
 		}
 
@@ -63,7 +63,7 @@ func (tcpClient *TCPClient) writePump() {
 		tcpClient.mutex.Unlock()
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"id": tcpClient.id}).Debug(err)
+			logrus.WithFields(logrus.Fields{"ID": tcpClient.ID}).Debug(err)
 			return
 		}
 	}
@@ -107,7 +107,7 @@ func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
 		Client: &Client{
 			Hub: hub,
-			id:  address,
+			ID:  address,
 		},
 		ChannelCommunication: &ChannelCommunication{
 			sendCh:    make(chan []byte, 256),

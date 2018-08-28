@@ -8,13 +8,6 @@ type Hub struct {
 	BroadcastChan chan []byte
 }
 
-func (hub *Hub) Set(key string, client IClient) {
-	hub.rwMutex.Lock()
-	defer hub.rwMutex.Unlock()
-
-	hub.Clients[key] = client
-}
-
 func (hub *Hub) Get(key string) (IClient, bool) {
 	hub.rwMutex.RLock()
 	defer hub.rwMutex.RUnlock()
@@ -28,6 +21,13 @@ func (hub *Hub) Get(key string) (IClient, bool) {
 	}
 }
 
+func (hub *Hub) Set(key string, client IClient) {
+	hub.rwMutex.Lock()
+	defer hub.rwMutex.Unlock()
+
+	hub.Clients[key] = client
+}
+
 func (hub *Hub) Del(key string) {
 	hub.rwMutex.Lock()
 	defer hub.rwMutex.Unlock()
@@ -39,7 +39,7 @@ func (hub *Hub) Broadcast(data []byte) {
 	hub.BroadcastChan <- data
 }
 
-func (hub *Hub) Listen() {
+func (hub *Hub) listen() {
 	for data := range hub.BroadcastChan {
 		hub.rwMutex.RLock()
 
@@ -67,7 +67,7 @@ func NewHub() *Hub {
 		BroadcastChan: make(chan []byte, 256),
 	}
 
-	go hub.Listen()
+	go hub.listen()
 
 	return hub
 }

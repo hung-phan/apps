@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
-	"sync"
 )
 
 const (
@@ -53,42 +52,28 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 
 	logrus.WithField("address", address).Info("start TCP server")
 
-	var (
-		hub            = NewHub()
-		rwMutex        = sync.RWMutex{}
-		isShuttingDown = false
-	)
-
-	go func() {
-		<-shutdownSignal
-
-		rwMutex.Lock()
-		isShuttingDown = true
-		rwMutex.Unlock()
-
-		hub.Shutdown()
-		listener.Close()
-	}()
+	hub := NewHub()
 
 	for {
-		rwMutex.RLock()
-		if isShuttingDown {
-			break
+		select {
+		case <-shutdownSignal:
+			hub.Shutdown()
+			listener.Close()
+
+		default:
+			conn, err := listener.Accept()
+
+			if err != nil {
+				logrus.Debug("failed to accept new connection request:", err)
+				continue
+			}
+
+			go connectionHandler(TcpConnection, NewTCPClient(
+				hub,
+				ksuid.New().String(),
+				conn.(*net.TCPConn),
+			))
 		}
-		rwMutex.RUnlock()
-
-		conn, err := listener.Accept()
-
-		if err != nil {
-			logrus.Debug("failed to accept new connection request:", err)
-			continue
-		}
-
-		go connectionHandler(TcpConnection, NewTCPClient(
-			hub,
-			ksuid.New().String(),
-			conn.(*net.TCPConn),
-		))
 	}
 }
 
