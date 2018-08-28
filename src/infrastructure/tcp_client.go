@@ -48,14 +48,14 @@ func (tcpClient *TCPClient) readPump() {
 		}
 
 		// trim the request string - ReadBytes does not strip any newlines
-		tcpClient.GetReceiveChannel() <- data[:len(data)-1]
+		tcpClient.receiveCh <- data[:len(data)-1]
 	}
 }
 
 func (tcpClient *TCPClient) writePump() {
 	defer tcpClient.Shutdown()
 
-	for data := range tcpClient.GetSendChannel() {
+	for data := range tcpClient.sendCh {
 		newData := append(data, '\n')
 
 		tcpClient.mutex.Lock()

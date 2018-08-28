@@ -50,14 +50,14 @@ func (wsClient *WSClient) readPump() {
 			return
 		}
 
-		wsClient.GetReceiveChannel() <- data
+		wsClient.receiveCh <- data
 	}
 }
 
 func (wsClient *WSClient) writePump() {
 	defer wsClient.Shutdown()
 
-	for data := range wsClient.GetSendChannel() {
+	for data := range wsClient.sendCh {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
