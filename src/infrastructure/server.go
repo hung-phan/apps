@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
+	"sync"
 )
 
 const (
@@ -53,12 +54,20 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	logrus.WithField("address", address).Info("start TCP server")
 
 	var (
-		hub    = NewHub()
-		connCh = make(chan *net.TCPConn)
+		hub        = NewHub()
+		connCh     = make(chan *net.TCPConn)
+		rwMutex    = sync.RWMutex{}
+		isShutdown = false
 	)
 
 	go func() {
 		for {
+			rwMutex.RLock()
+			if isShutdown {
+				break
+			}
+			rwMutex.RUnlock()
+
 			conn, err := listener.Accept()
 
 			if err != nil {
@@ -82,6 +91,10 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 		case <-shutdownSignal:
 			hub.Shutdown()
 			listener.Close()
+
+			rwMutex.Lock()
+			isShutdown = true
+			rwMutex.Unlock()
 		}
 	}
 }

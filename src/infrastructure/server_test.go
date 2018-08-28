@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-func TestTCPConnection(t *testing.T) {
+func TestServer(t *testing.T) {
 	assertInstance := assert.New(t)
 
-	t.Run("should be able to send and receive message from TCP connection", func(t *testing.T) {
+	t.Run("Test StartTCPServer", func(t *testing.T) {
 		var (
 			tcpStopSignal = make(chan bool)
 			msg           = "Message"
