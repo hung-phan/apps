@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
@@ -8,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 )
 
 const (
@@ -56,17 +58,17 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	var (
 		hub        = NewHub()
 		connCh     = make(chan *net.TCPConn)
-		rwMutex    = sync.RWMutex{}
+		rwMutex    = sync.Mutex{}
 		isShutdown = false
 	)
 
 	go func() {
 		for {
-			rwMutex.RLock()
+			rwMutex.Lock()
 			if isShutdown {
 				break
 			}
-			rwMutex.RUnlock()
+			rwMutex.Unlock()
 
 			conn, err := listener.Accept()
 
@@ -99,8 +101,20 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	}
 }
 
-func StartHTTPServer(address string, router *mux.Router) error {
-	logrus.Println("start HTTP server at", address)
+func StartHTTPServer(address string, shutdownSignal chan bool, router *mux.Router) {
+	server := &http.Server{Addr: address, Handler: router}
 
-	return http.ListenAndServe(address, router)
+	go func() {
+		logrus.Println("start HTTP server at", address)
+
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			logrus.Fatalln(err)
+		}
+	}()
+
+	<-shutdownSignal
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+
+	server.Shutdown(ctx)
 }

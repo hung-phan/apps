@@ -15,7 +15,7 @@ func TestServer(t *testing.T) {
 		var (
 			tcpStopSignal = make(chan bool)
 			msg           = "Message"
-			jitter = func() {
+			jitter        = func() {
 				time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 			}
 			connectionHandler = func(connectionType string, client IClient) {

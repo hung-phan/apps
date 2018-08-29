@@ -76,15 +76,11 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 		err     error
 	)
 
-	tcpAddr, err = net.ResolveTCPAddr("tcp4", address)
-
-	if err != nil {
+	if tcpAddr, err = net.ResolveTCPAddr("tcp4", address); err != nil {
 		return nil, errors.New(fmt.Sprintf("cannot resolve address %s", address))
 	}
 
-	conn, err = net.DialTCP("tcp", nil, tcpAddr)
-
-	if err != nil {
+	if conn, err = net.DialTCP("tcp", nil, tcpAddr); err != nil {
 		return nil, errors.New(fmt.Sprintf("cannot create TCP connection to address %s", address))
 	}
 
