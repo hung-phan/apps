@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"context"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"github.com/segmentio/ksuid"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -12,41 +11,7 @@ import (
 	"time"
 )
 
-const (
-	TcpConnection       = "TCP_CONNECTION"
-	WebSocketConnection = "WEB_SOCKET_CONNECTION"
-)
-
-var (
-	webSocketUpgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-)
-
-type ConnectionHandler func(string, IClient)
-
-func CreateWebSocketHandler(connectionHandler ConnectionHandler) http.HandlerFunc {
-	hub := NewHub()
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := webSocketUpgrader.Upgrade(w, r, nil)
-
-		if err != nil {
-			logrus.Debug("upgrade:", err)
-			return
-		}
-
-		go connectionHandler(WebSocketConnection, NewWSClient(
-			hub,
-			ksuid.New().String(),
-			conn,
-		))
-	}
-}
-
-func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler ConnectionHandler) {
+func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
