@@ -3,7 +3,7 @@ package application
 import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/hung-phan/chat-app/src/infrastructure"
+	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
 	"github.com/segmentio/ksuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -17,17 +17,9 @@ var (
 	}
 )
 
-func HandleConnection(_ string, client infrastructure.IClient) {
-	receiveCh, sendCh := client.GetReceiveChannel(), client.GetSendChannel()
-
-	for data := range receiveCh {
-		sendCh <- data
-	}
-}
-
-func CreateRouter() *mux.Router {
+func CreateRouter(wsConnectionHandler func(string, client_manager.IClient)) *mux.Router {
 	var (
-		hub    = infrastructure.NewHub()
+		hub    = client_manager.NewHub()
 		router = mux.NewRouter()
 	)
 
@@ -41,7 +33,7 @@ func CreateRouter() *mux.Router {
 				return
 			}
 
-			go HandleConnection(infrastructure.WebSocketConnection, infrastructure.NewWSClient(
+			go wsConnectionHandler(client_manager.WebSocketConnection, client_manager.NewWSClient(
 				hub,
 				ksuid.New().String(),
 				conn,

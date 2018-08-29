@@ -1,4 +1,4 @@
-package infrastructure
+package client_manager
 
 type IChannelCommunication interface {
 	GetSendChannel() chan []byte

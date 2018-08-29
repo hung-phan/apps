@@ -18,8 +18,17 @@ func main() {
 	signal.Notify(stopSignal, syscall.SIGTERM)
 	signal.Notify(stopSignal, syscall.SIGINT)
 
-	go infrastructure.StartHTTPServer(":3000", httpStopSignal, application.CreateRouter())
-	go infrastructure.StartTCPServer(":3001", tcpStopSignal, application.HandleConnection)
+	go infrastructure.StartHTTPServer(
+		":3000",
+		httpStopSignal,
+		application.CreateRouter(application.WSConnectionHandler),
+	)
+
+	go infrastructure.StartTCPServer(
+		":3001",
+		tcpStopSignal,
+		application.TCPConnectionHandler,
+	)
 
 	<-stopSignal
 

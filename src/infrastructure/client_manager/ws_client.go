@@ -1,4 +1,4 @@
-package infrastructure
+package client_manager
 
 import (
 	"github.com/gorilla/websocket"

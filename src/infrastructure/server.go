@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"github.com/gorilla/mux"
+	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
 	"github.com/segmentio/ksuid"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, IClient)) {
+func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, client_manager.IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -21,7 +22,7 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	logrus.WithField("address", address).Info("start TCP server")
 
 	var (
-		hub        = NewHub()
+		hub        = client_manager.NewHub()
 		connCh     = make(chan *net.TCPConn)
 		rwMutex    = sync.Mutex{}
 		isShutdown = false
@@ -49,7 +50,7 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	for {
 		select {
 		case conn := <-connCh:
-			go connectionHandler(TcpConnection, NewTCPClient(
+			go connectionHandler(client_manager.TcpConnection, client_manager.NewTCPClient(
 				hub,
 				ksuid.New().String(),
 				conn,
