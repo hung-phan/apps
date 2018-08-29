@@ -11,7 +11,7 @@ import (
 func TestServer(t *testing.T) {
 	assertInstance := assert.New(t)
 
-	t.Run("Test StartTCPServer", func(t *testing.T) {
+	t.Run("test StartTCPServer", func(t *testing.T) {
 		var (
 			tcpStopSignal = make(chan bool)
 			msg           = "Message"
@@ -19,7 +19,10 @@ func TestServer(t *testing.T) {
 				time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 			}
 			connectionHandler = func(connectionType string, client IClient) {
+				sameClient := client.GetHub().Get(client.GetID())
+
 				assertInstance.Equal(connectionType, TcpConnection)
+				assertInstance.Equal(client, sameClient)
 
 				for data := range client.GetReceiveChannel() {
 					client.GetHub().Broadcast(data)

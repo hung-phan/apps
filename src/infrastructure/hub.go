@@ -8,17 +8,15 @@ type Hub struct {
 	broadcastCh chan []byte
 }
 
-func (hub *Hub) Get(key string) (IClient, bool) {
+func (hub *Hub) Get(key string) IClient {
 	hub.rwMutex.RLock()
 	defer hub.rwMutex.RUnlock()
 
-	conn, ok := hub.clients[key]
-
-	if ok {
-		return conn, true
-	} else {
-		return nil, false
+	if conn, ok := hub.clients[key]; ok {
+		return conn
 	}
+
+	return nil
 }
 
 func (hub *Hub) Set(key string, client IClient) {
