@@ -80,7 +80,9 @@ func StartHTTPServer(address string, shutdownSignal chan bool, router *mux.Route
 
 	<-shutdownSignal
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+
+	defer cancel()
 
 	server.Shutdown(ctx)
 }
