@@ -1,9 +1,8 @@
-package main
+package infrastructure
 
 import (
 	"bufio"
 	"github.com/hung-phan/chat-app/src/application"
-	"github.com/hung-phan/chat-app/src/infrastructure"
 	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
@@ -46,7 +45,7 @@ func TestInfrastructure(t *testing.T) {
 			}
 		)
 
-		go infrastructure.StartTCPServer(
+		go StartTCPServer(
 			"localhost:3001",
 			tcpStopSignal,
 			tcpConnectionHandler,
@@ -89,7 +88,7 @@ func TestInfrastructure(t *testing.T) {
 			}
 		)
 
-		go infrastructure.StartHTTPServer(
+		go StartHTTPServer(
 			"localhost:3000",
 			httpStopSignal,
 			application.CreateRouter(wsConnectionHandler),
