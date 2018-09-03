@@ -22,7 +22,7 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	logrus.WithField("address", address).Info("start TCP server")
 
 	var (
-		hub        = client_manager.NewHub()
+		tcpHub     = client_manager.NewHub()
 		connCh     = make(chan *net.TCPConn)
 		rwMutex    = sync.Mutex{}
 		isShutdown = false
@@ -51,13 +51,13 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 		select {
 		case conn := <-connCh:
 			go connectionHandler(client_manager.TcpConnection, client_manager.NewTCPClient(
-				hub,
+				tcpHub,
 				ksuid.New().String(),
 				conn,
 			))
 
 		case <-shutdownSignal:
-			hub.Shutdown()
+			tcpHub.Shutdown()
 			listener.Close()
 
 			rwMutex.Lock()

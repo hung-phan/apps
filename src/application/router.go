@@ -19,7 +19,7 @@ var (
 
 func CreateRouter(wsConnectionHandler func(string, client_manager.IClient)) *mux.Router {
 	var (
-		hub    = client_manager.NewHub()
+		wsHub  = client_manager.NewHub()
 		router = mux.NewRouter()
 	)
 
@@ -34,7 +34,7 @@ func CreateRouter(wsConnectionHandler func(string, client_manager.IClient)) *mux
 			}
 
 			go wsConnectionHandler(client_manager.WebSocketConnection, client_manager.NewWSClient(
-				hub,
+				wsHub,
 				ksuid.New().String(),
 				conn,
 			))
