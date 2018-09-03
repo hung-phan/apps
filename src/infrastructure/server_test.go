@@ -47,6 +47,7 @@ func TestInfrastructure(t *testing.T) {
 		go StartTCPServer(
 			"localhost:3001",
 			tcpStopSignal,
+			client_manager.NewHub(),
 			tcpConnectionHandler,
 		)
 

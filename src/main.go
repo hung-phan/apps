@@ -27,6 +27,7 @@ func main() {
 	go infrastructure.StartTCPServer(
 		":3001",
 		tcpStopSignal,
+		application.DefaultTCPHub,
 		application.TCPConnectionHandler,
 	)
 

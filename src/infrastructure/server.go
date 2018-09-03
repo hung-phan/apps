@@ -12,7 +12,12 @@ import (
 	"time"
 )
 
-func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(client_manager.IClient)) {
+func StartTCPServer(
+	address string,
+	shutdownSignal chan bool,
+	hub *client_manager.Hub,
+	connectionHandler func(client_manager.IClient),
+) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -22,7 +27,6 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	logrus.WithField("address", address).Info("start TCP server")
 
 	var (
-		tcpHub     = client_manager.NewHub()
 		connCh     = make(chan *net.TCPConn)
 		rwMutex    = sync.Mutex{}
 		isShutdown = false
@@ -51,13 +55,13 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 		select {
 		case conn := <-connCh:
 			go connectionHandler(client_manager.NewTCPClient(
-				tcpHub,
+				hub,
 				ksuid.New().String(),
 				conn,
 			))
 
 		case <-shutdownSignal:
-			tcpHub.Shutdown()
+			hub.Shutdown()
 			listener.Close()
 
 			rwMutex.Lock()
