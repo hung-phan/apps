@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(string, client_manager.IClient)) {
+func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler func(client_manager.IClient)) {
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -50,7 +50,7 @@ func StartTCPServer(address string, shutdownSignal chan bool, connectionHandler 
 	for {
 		select {
 		case conn := <-connCh:
-			go connectionHandler(client_manager.TcpConnection, client_manager.NewTCPClient(
+			go connectionHandler(client_manager.NewTCPClient(
 				tcpHub,
 				ksuid.New().String(),
 				conn,
