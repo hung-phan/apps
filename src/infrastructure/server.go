@@ -71,7 +71,11 @@ func StartTCPServer(
 	}
 }
 
-func StartHTTPServer(address string, shutdownSignal chan bool, router *mux.Router) {
+func StartHTTPServer(
+	address string,
+	shutdownSignal chan bool,
+	router *mux.Router,
+) {
 	server := &http.Server{Addr: address, Handler: router}
 
 	go func() {
