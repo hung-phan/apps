@@ -123,12 +123,12 @@ func (h *HashRing) GetNodePos(stringKey string) (pos int, ok bool) {
 	nodes := h.sortedKeys
 	pos = sort.Search(len(nodes), func(i int) bool { return nodes[i] > key })
 
+	// Wrap the search, should return first node
 	if pos == len(nodes) {
-		// Wrap the search, should return first node
-		return 0, true
-	} else {
-		return pos, true
+		pos = 0
 	}
+
+	return pos, true
 }
 
 func (h *HashRing) GenKey(key string) HashKey {
