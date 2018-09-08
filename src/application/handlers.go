@@ -1,6 +1,8 @@
 package application
 
-import "github.com/hung-phan/chat-app/src/infrastructure/client_manager"
+import (
+	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
+)
 
 var (
 	DefaultTCPHub = client_manager.NewHub()
