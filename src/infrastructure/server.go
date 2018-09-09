@@ -4,8 +4,9 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
+	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"github.com/segmentio/ksuid"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"sync"
@@ -21,10 +22,10 @@ func StartTCPServer(
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
-		logrus.Fatalln("failed to start server:", err)
+		logger.Client.Fatal("failed to start TCP server:", zap.Error(err))
 	}
 
-	logrus.WithField("address", address).Info("start TCP server")
+	logger.Client.Info("start TCP server", zap.String("address", address))
 
 	var (
 		connCh     = make(chan *net.TCPConn)
@@ -43,7 +44,7 @@ func StartTCPServer(
 			conn, err := listener.Accept()
 
 			if err != nil {
-				logrus.Debug("failed to accept new connection request:", err)
+				logger.Client.Debug("failed to accept new connection request:", zap.Error(err))
 				continue
 			}
 
@@ -79,10 +80,10 @@ func StartHTTPServer(
 	server := &http.Server{Addr: address, Handler: router}
 
 	go func() {
-		logrus.Println("start HTTP server at", address)
+		logger.Client.Info("start HTTP server", zap.String("address", address))
 
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			logrus.Fatalln(err)
+			logger.Client.Fatal("failed to start HTTP server:", zap.Error(err))
 		}
 	}()
 

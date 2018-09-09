@@ -2,7 +2,8 @@ package client_manager
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
+	"github.com/hung-phan/chat-app/src/infrastructure/logger"
+	"go.uber.org/zap"
 )
 
 type WSClient struct {
@@ -46,7 +47,7 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				logrus.WithFields(logrus.Fields{"ID": wsClient.ID}).Debug(err)
+				logger.Client.Debug("ws read fail", zap.Error(err), zap.String("ID", wsClient.ID))
 			}
 			return
 		}
@@ -62,7 +63,7 @@ func (wsClient *WSClient) writePump() {
 		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"ID": wsClient.ID}).Debug(err)
+			logger.Client.Debug("ws write fail", zap.Error(err), zap.String("ID", wsClient.ID))
 			return
 		}
 	}

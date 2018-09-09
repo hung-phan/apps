@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
+	"github.com/hung-phan/chat-app/src/infrastructure/logger"
+	"go.uber.org/zap"
 	"net"
 	"time"
 )
@@ -43,7 +44,7 @@ func (tcpClient *TCPClient) readPump() {
 		data, err := tcpClient.rw.ReadBytes('\n')
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"ID": tcpClient.ID}).Debug(err)
+			logger.Client.Debug("tcp read fail", zap.Error(err), zap.String("ID", tcpClient.ID))
 			return
 		}
 
@@ -63,7 +64,7 @@ func (tcpClient *TCPClient) writePump() {
 		tcpClient.mutex.Unlock()
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"ID": tcpClient.ID}).Debug(err)
+			logger.Client.Debug("tcp write fail", zap.Error(err), zap.String("ID", tcpClient.ID))
 			return
 		}
 	}

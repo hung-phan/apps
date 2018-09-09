@@ -4,8 +4,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
+	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"github.com/segmentio/ksuid"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -28,7 +29,7 @@ func CreateRouter(wsConnectionHandler func(client_manager.IClient)) *mux.Router 
 			conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
 			if err != nil {
-				logrus.Debug("upgrade:", err)
+				logger.Client.Debug("websocket upgrade fail", zap.Error(err))
 				return
 			}
 
