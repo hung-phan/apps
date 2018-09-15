@@ -3,19 +3,24 @@ package client_manager
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"go.uber.org/zap"
 	"net"
 	"time"
 )
 
-type TCPClient struct {
-	*Client
-	*ChannelCommunication
+var (
+	ErrCannotResolveAddress         = errors.New("cannot resolve address")
+	ErrCannotCreateTCPConnection    = errors.New("cannot create TCP connection")
+	ErrCannotKeepAliveTCPConnection = errors.New("cannot set KeepAlive for TCP connection")
+)
 
-	rw   *bufio.ReadWriter
+type TCPClient struct {
+	*BaseClient
+
 	Conn *net.TCPConn
+
+	rw *bufio.ReadWriter
 }
 
 func (tcpClient *TCPClient) Flush() error {
@@ -30,11 +35,10 @@ func (tcpClient *TCPClient) Shutdown() {
 }
 
 func (tcpClient *TCPClient) scheduleForShutdown() {
-	tcpClient.CloseAllChannels()
-
 	tcpClient.Flush()
 	tcpClient.Conn.Close()
 	tcpClient.Hub.Del(tcpClient.ID)
+	tcpClient.shutdownChannels()
 }
 
 func (tcpClient *TCPClient) readPump() {
@@ -78,23 +82,23 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 	)
 
 	if tcpAddr, err = net.ResolveTCPAddr("tcp4", address); err != nil {
-		return nil, errors.New(fmt.Sprintf("cannot resolve address %s", address))
+		return nil, ErrCannotResolveAddress
 	}
 
 	if conn, err = net.DialTCP("tcp", nil, tcpAddr); err != nil {
-		return nil, errors.New(fmt.Sprintf("cannot create TCP connection to address %s", address))
+		return nil, ErrCannotCreateTCPConnection
 	}
 
 	if err = conn.SetKeepAlive(true); err != nil {
 		defer conn.Close()
 
-		return nil, errors.New(fmt.Sprintf("cannot set KeepAlive for TCP connection to address %s", address))
+		return nil, ErrCannotKeepAliveTCPConnection
 	}
 
 	if err = conn.SetKeepAlivePeriod(30 * time.Minute); err != nil {
 		defer conn.Close()
 
-		return nil, errors.New(fmt.Sprintf("cannot set KeepAlivePeriod for TCP connection to address %s", address))
+		return nil, ErrCannotKeepAliveTCPConnection
 	}
 
 	return conn, nil
@@ -102,13 +106,12 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 
 func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
-		Client: &Client{
-			Hub: hub,
+		BaseClient: &BaseClient{
 			ID:  address,
-		},
-		ChannelCommunication: &ChannelCommunication{
-			sendCh:    make(chan []byte, 256),
-			receiveCh: make(chan []byte, 256),
+			Hub: hub,
+
+			sendCh:    make(chan []byte, 16),
+			receiveCh: make(chan []byte, 16),
 		},
 		Conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),

@@ -42,9 +42,7 @@ func (hub *Hub) listen() {
 		hub.rwMutex.RLock()
 
 		for _, client := range hub.clients {
-			go func(client IClient) {
-				client.GetSendChannel() <- data
-			}(client)
+			client.GetSendChannel() <- data
 		}
 
 		hub.rwMutex.RUnlock()

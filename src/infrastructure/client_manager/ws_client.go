@@ -7,8 +7,7 @@ import (
 )
 
 type WSClient struct {
-	*Client
-	*ChannelCommunication
+	*BaseClient
 
 	Conn *websocket.Conn
 }
@@ -24,10 +23,10 @@ func (wsClient *WSClient) Shutdown() {
 
 func (wsClient *WSClient) scheduleForShutdown() {
 	wsClient.sendCloseSignal()
-	wsClient.CloseAllChannels()
 
 	wsClient.Conn.Close()
 	wsClient.Hub.Del(wsClient.ID)
+	wsClient.shutdownChannels()
 }
 
 func (wsClient *WSClient) sendCloseSignal() error {
@@ -71,13 +70,12 @@ func (wsClient *WSClient) writePump() {
 
 func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
-		Client: &Client{
-			Hub: hub,
+		BaseClient: &BaseClient{
 			ID:  id,
-		},
-		ChannelCommunication: &ChannelCommunication{
-			sendCh:    make(chan []byte, 256),
-			receiveCh: make(chan []byte, 256),
+			Hub: hub,
+
+			sendCh:    make(chan []byte, 16),
+			receiveCh: make(chan []byte, 16),
 		},
 		Conn: conn,
 	}
