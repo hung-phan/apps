@@ -18,7 +18,7 @@ var (
 	}
 )
 
-func CreateRouter(wsConnectionHandler func(client_manager.IClient)) *mux.Router {
+func CreateRouter(wsConnectionHandler func(client_manager.Client)) *mux.Router {
 	var (
 		router = mux.NewRouter()
 	)

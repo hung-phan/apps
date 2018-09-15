@@ -4,11 +4,11 @@ import "sync"
 
 type Hub struct {
 	rwMutex     sync.RWMutex
-	clients     map[string]IClient
+	clients     map[string]Client
 	broadcastCh chan []byte
 }
 
-func (hub *Hub) Get(key string) IClient {
+func (hub *Hub) Get(key string) Client {
 	hub.rwMutex.RLock()
 	defer hub.rwMutex.RUnlock()
 
@@ -19,7 +19,7 @@ func (hub *Hub) Get(key string) IClient {
 	return nil
 }
 
-func (hub *Hub) Set(key string, client IClient) {
+func (hub *Hub) Set(key string, client Client) {
 	hub.rwMutex.Lock()
 	defer hub.rwMutex.Unlock()
 
@@ -59,7 +59,7 @@ func (hub *Hub) Shutdown() {
 
 func NewHub() *Hub {
 	hub := &Hub{
-		clients:     make(map[string]IClient),
+		clients:     make(map[string]Client),
 		broadcastCh: make(chan []byte, 256),
 	}
 

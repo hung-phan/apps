@@ -17,7 +17,7 @@ func StartTCPServer(
 	address string,
 	shutdownSignal chan bool,
 	hub *client_manager.Hub,
-	connectionHandler func(client_manager.IClient),
+	connectionHandler func(client_manager.Client),
 ) {
 	listener, err := net.Listen("tcp", address)
 

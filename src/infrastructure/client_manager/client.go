@@ -1,6 +1,6 @@
 package client_manager
 
-type IClient interface {
+type Client interface {
 	GetID() string
 	GetHub() *Hub
 	GetSendChannel() chan []byte
