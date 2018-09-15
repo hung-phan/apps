@@ -23,10 +23,6 @@ func TestInfrastructure(t *testing.T) {
 			tcpStopSignal        = make(chan bool)
 			msg                  = "Message"
 			tcpConnectionHandler = func(client client_manager.IClient) {
-				sameClient := client.GetHub().Get(client.GetID())
-
-				assertInstance.Equal(client, sameClient)
-
 				for data := range client.GetReceiveChannel() {
 					client.GetHub().Broadcast(data)
 
@@ -77,10 +73,6 @@ func TestInfrastructure(t *testing.T) {
 		var (
 			httpStopSignal      = make(chan bool)
 			wsConnectionHandler = func(client client_manager.IClient) {
-				sameClient := client.GetHub().Get(client.GetID())
-
-				assertInstance.Equal(client, sameClient)
-
 				for data := range client.GetReceiveChannel() {
 					client.GetHub().Broadcast(data)
 				}
