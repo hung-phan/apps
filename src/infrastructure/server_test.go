@@ -23,7 +23,7 @@ func TestInfrastructure(t *testing.T) {
 			tcpStopSignal        = make(chan bool)
 			msg                  = "Message"
 			tcpConnectionHandler = func(client client_manager.Client) {
-				for data := range client.GetReceiveChannel() {
+				client.AddListener(func(data []byte) {
 					client.GetHub().Broadcast(data)
 
 					// enough time for client to send the message so we can force
@@ -31,7 +31,7 @@ func TestInfrastructure(t *testing.T) {
 					jitter()
 
 					client.Flush()
-				}
+				})
 			}
 			assertError = func(err error) {
 				if err != nil {
@@ -73,9 +73,9 @@ func TestInfrastructure(t *testing.T) {
 		var (
 			httpStopSignal      = make(chan bool)
 			wsConnectionHandler = func(client client_manager.Client) {
-				for data := range client.GetReceiveChannel() {
+				client.AddListener(func(data []byte) {
 					client.GetHub().Broadcast(data)
-				}
+				})
 			}
 		)
 

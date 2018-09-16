@@ -1,34 +1,60 @@
 package client_manager
 
-import "sync"
+import (
+	"github.com/hung-phan/chat-app/src/infrastructure/logger"
+	"sync"
+)
 
 type BaseClient struct {
-	ID  string
-	Hub *Hub
-
-	mutex     sync.Mutex
-	once      sync.Once
-	sendCh    chan []byte
-	receiveCh chan []byte
+	ID         string
+	Hub        *Hub
+	listeners  []Listener
+	stateMutex sync.RWMutex
 }
 
-func (client *BaseClient) GetID() string {
-	return client.ID
+func (baseClient *BaseClient) GetID() string {
+	return baseClient.ID
 }
 
-func (client *BaseClient) GetHub() *Hub {
-	return client.Hub
+func (baseClient *BaseClient) GetHub() *Hub {
+	return baseClient.Hub
 }
 
-func (client *BaseClient) GetSendChannel() chan []byte {
-	return client.sendCh
+func (baseClient *BaseClient) AddListener(listener Listener) {
+	baseClient.stateMutex.Lock()
+	defer baseClient.stateMutex.Unlock()
+
+	for _, item := range baseClient.listeners {
+		if &item == &listener {
+			baseClient.stateMutex.RUnlock()
+
+			logger.Client.Fatal("found duplicated listener")
+
+			return
+		}
+	}
+
+	baseClient.listeners = append(baseClient.listeners, listener)
 }
 
-func (client *BaseClient) GetReceiveChannel() chan []byte {
-	return client.receiveCh
+func (baseClient *BaseClient) RemoveListener(listener Listener) {
+	baseClient.stateMutex.Lock()
+	defer baseClient.stateMutex.Unlock()
+
+	for index, item := range baseClient.listeners {
+		if &item == &listener {
+			baseClient.listeners = append(baseClient.listeners[:index], baseClient.listeners[index+1:]...)
+
+			return
+		}
+	}
 }
 
-func (client *BaseClient) shutdownChannels() {
-	close(client.sendCh)
-	close(client.receiveCh)
+func (baseClient *BaseClient) Broadcast(data []byte) {
+	baseClient.stateMutex.RLock()
+	defer baseClient.stateMutex.RUnlock()
+
+	for _, item := range baseClient.listeners {
+		go item(data)
+	}
 }

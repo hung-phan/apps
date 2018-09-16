@@ -6,6 +6,7 @@ import (
 	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"go.uber.org/zap"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -18,31 +19,32 @@ var (
 type TCPClient struct {
 	*BaseClient
 
-	Conn *net.TCPConn
+	Conn    *net.TCPConn
+	once    sync.Once
+	ioMutex sync.Mutex
+	rw      *bufio.ReadWriter
+}
 
-	rw *bufio.ReadWriter
+func (tcpClient *TCPClient) Write(data []byte) (int, error) {
+	tcpClient.ioMutex.Lock()
+	defer tcpClient.ioMutex.Unlock()
+
+	return tcpClient.rw.Write(append(data, '\n'))
 }
 
 func (tcpClient *TCPClient) Flush() error {
-	tcpClient.mutex.Lock()
-	defer tcpClient.mutex.Unlock()
+	tcpClient.ioMutex.Lock()
+	defer tcpClient.ioMutex.Unlock()
 
 	return tcpClient.rw.Flush()
 }
 
-func (tcpClient *TCPClient) Shutdown() {
-	tcpClient.once.Do(tcpClient.scheduleForShutdown)
-}
-
-func (tcpClient *TCPClient) scheduleForShutdown() {
-	tcpClient.Flush()
-	tcpClient.Conn.Close()
-	tcpClient.Hub.Del(tcpClient.ID)
-	tcpClient.shutdownChannels()
+func (tcpClient *TCPClient) GracefulShutdown() {
+	tcpClient.once.Do(tcpClient.shutdown)
 }
 
 func (tcpClient *TCPClient) readPump() {
-	defer tcpClient.Shutdown()
+	defer tcpClient.GracefulShutdown()
 
 	for {
 		data, err := tcpClient.rw.ReadBytes('\n')
@@ -53,25 +55,14 @@ func (tcpClient *TCPClient) readPump() {
 		}
 
 		// trim the request string - ReadBytes does not strip any newlines
-		tcpClient.receiveCh <- data[:len(data)-1]
+		go tcpClient.Broadcast(data[:len(data)-1])
 	}
 }
 
-func (tcpClient *TCPClient) writePump() {
-	defer tcpClient.Shutdown()
-
-	for data := range tcpClient.sendCh {
-		newData := append(data, '\n')
-
-		tcpClient.mutex.Lock()
-		_, err := tcpClient.rw.Write(newData)
-		tcpClient.mutex.Unlock()
-
-		if err != nil {
-			logger.Client.Debug("tcp write fail", zap.Error(err), zap.String("ID", tcpClient.ID))
-			return
-		}
-	}
+func (tcpClient *TCPClient) shutdown() {
+	tcpClient.Flush()
+	tcpClient.Conn.Close()
+	tcpClient.Hub.Del(tcpClient.ID)
 }
 
 func CreateTCPConnection(address string) (*net.TCPConn, error) {
@@ -109,9 +100,6 @@ func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 		BaseClient: &BaseClient{
 			ID:  address,
 			Hub: hub,
-
-			sendCh:    make(chan []byte, 16),
-			receiveCh: make(chan []byte, 16),
 		},
 		Conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
@@ -120,7 +108,6 @@ func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
 	hub.Set(address, client)
 
 	go client.readPump()
-	go client.writePump()
 
 	return client
 }

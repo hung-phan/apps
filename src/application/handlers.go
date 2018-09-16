@@ -10,17 +10,13 @@ var (
 )
 
 func TCPConnectionHandler(tcpClient client_manager.Client) {
-	receiveCh, sendCh := tcpClient.GetReceiveChannel(), tcpClient.GetSendChannel()
-
-	for data := range receiveCh {
-		sendCh <- data
-	}
+	tcpClient.AddListener(func(data []byte) {
+		tcpClient.Write(data)
+	})
 }
 
 func WSConnectionHandler(wsClient client_manager.Client) {
-	receiveCh, sendCh := wsClient.GetReceiveChannel(), wsClient.GetSendChannel()
-
-	for data := range receiveCh {
-		sendCh <- data
-	}
+	wsClient.AddListener(func(data []byte) {
+		wsClient.Write(data)
+	})
 }

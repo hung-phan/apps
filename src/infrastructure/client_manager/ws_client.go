@@ -4,12 +4,28 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"go.uber.org/zap"
+	"sync"
 )
 
 type WSClient struct {
 	*BaseClient
 
-	Conn *websocket.Conn
+	Conn    *websocket.Conn
+	once    sync.Once
+	ioMutex sync.Mutex
+}
+
+func (wsClient *WSClient) Write(data []byte) (int, error) {
+	wsClient.ioMutex.Lock()
+	defer wsClient.ioMutex.Unlock()
+
+	err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
+
+	if err != nil {
+		return 0, err
+	} else {
+		return len(data), nil
+	}
 }
 
 // websocket won't try to do buffering like TCP, so you never need to call Flush() on it
@@ -17,24 +33,25 @@ func (wsClient *WSClient) Flush() error {
 	return nil
 }
 
-func (wsClient *WSClient) Shutdown() {
-	wsClient.once.Do(wsClient.scheduleForShutdown)
+func (wsClient *WSClient) GracefulShutdown() {
+	wsClient.once.Do(wsClient.shutdown)
 }
 
-func (wsClient *WSClient) scheduleForShutdown() {
+func (wsClient *WSClient) shutdown() {
 	wsClient.sendCloseSignal()
-
 	wsClient.Conn.Close()
 	wsClient.Hub.Del(wsClient.ID)
-	wsClient.shutdownChannels()
 }
 
 func (wsClient *WSClient) sendCloseSignal() error {
+	wsClient.ioMutex.Lock()
+	defer wsClient.ioMutex.Unlock()
+
 	return wsClient.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 func (wsClient *WSClient) readPump() {
-	defer wsClient.Shutdown()
+	defer wsClient.GracefulShutdown()
 
 	for {
 		_, data, err := wsClient.Conn.ReadMessage()
@@ -51,20 +68,7 @@ func (wsClient *WSClient) readPump() {
 			return
 		}
 
-		wsClient.receiveCh <- data
-	}
-}
-
-func (wsClient *WSClient) writePump() {
-	defer wsClient.Shutdown()
-
-	for data := range wsClient.sendCh {
-		err := wsClient.Conn.WriteMessage(websocket.TextMessage, data)
-
-		if err != nil {
-			logger.Client.Debug("ws write fail", zap.Error(err), zap.String("ID", wsClient.ID))
-			return
-		}
+		go wsClient.Broadcast(data)
 	}
 }
 
@@ -73,9 +77,6 @@ func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 		BaseClient: &BaseClient{
 			ID:  id,
 			Hub: hub,
-
-			sendCh:    make(chan []byte, 16),
-			receiveCh: make(chan []byte, 16),
 		},
 		Conn: conn,
 	}
@@ -83,7 +84,6 @@ func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
 	hub.Set(id, client)
 
 	go client.readPump()
-	go client.writePump()
 
 	return client
 }

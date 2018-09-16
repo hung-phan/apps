@@ -3,9 +3,8 @@ package client_manager
 import "sync"
 
 type Hub struct {
-	rwMutex     sync.RWMutex
-	clients     map[string]Client
-	broadcastCh chan []byte
+	rwMutex sync.RWMutex
+	clients map[string]Client
 }
 
 func (hub *Hub) Get(key string) Client {
@@ -34,36 +33,22 @@ func (hub *Hub) Del(key string) {
 }
 
 func (hub *Hub) Broadcast(data []byte) {
-	hub.broadcastCh <- data
-}
+	hub.rwMutex.RLock()
+	defer hub.rwMutex.RUnlock()
 
-func (hub *Hub) listen() {
-	for data := range hub.broadcastCh {
-		hub.rwMutex.RLock()
-
-		for _, client := range hub.clients {
-			client.GetSendChannel() <- data
-		}
-
-		hub.rwMutex.RUnlock()
+	for _, client := range hub.clients {
+		go client.Write(data)
 	}
 }
 
 func (hub *Hub) Shutdown() {
-	close(hub.broadcastCh)
-
 	for _, client := range hub.clients {
-		client.Shutdown()
+		client.GracefulShutdown()
 	}
 }
 
 func NewHub() *Hub {
-	hub := &Hub{
-		clients:     make(map[string]Client),
-		broadcastCh: make(chan []byte, 256),
+	return &Hub{
+		clients: make(map[string]Client),
 	}
-
-	go hub.listen()
-
-	return hub
 }
