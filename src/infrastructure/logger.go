@@ -1,11 +1,11 @@
-package logger
+package infrastructure
 
 import (
 	"go.uber.org/zap"
 )
 
 var (
-	Client = createLogger()
+	Log = createLogger()
 )
 
 func createLogger() *zap.Logger {

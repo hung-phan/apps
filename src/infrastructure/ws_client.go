@@ -1,14 +1,13 @@
-package client_manager
+package infrastructure
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"go.uber.org/zap"
 	"sync"
 )
 
 type WSClient struct {
-	*BaseClient
+	*baseClient
 
 	Conn    *websocket.Conn
 	once    sync.Once
@@ -28,7 +27,7 @@ func (wsClient *WSClient) Write(data []byte) (int, error) {
 	}
 }
 
-// websocket won't try to do buffering like TCP, so you never need to call Flush() on it
+// websocket won't try to do buffering like TCP, so WebSocket Flush is a no op
 func (wsClient *WSClient) Flush() error {
 	return nil
 }
@@ -38,8 +37,20 @@ func (wsClient *WSClient) GracefulShutdown() {
 }
 
 func (wsClient *WSClient) shutdown() {
-	wsClient.sendCloseSignal()
-	wsClient.Conn.Close()
+	var err error = nil
+
+	err = wsClient.sendCloseSignal()
+
+	if err != nil {
+		Log.Error("fail to send close signal", zap.Error(err))
+	}
+
+	err = wsClient.Conn.Close()
+
+	if err != nil {
+		Log.Error("fail to close WebSocket connection", zap.Error(err))
+	}
+
 	wsClient.Hub.Del(wsClient.ID)
 }
 
@@ -63,18 +74,18 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				logger.Client.Debug("ws read fail", zap.Error(err), zap.String("ID", wsClient.ID))
+				Log.Debug("ws read fail", zap.Error(err), zap.String("ID", wsClient.ID))
 			}
 			return
 		}
 
-		go wsClient.Broadcast(data)
+		go wsClient.Emit(data)
 	}
 }
 
-func NewWSClient(hub *Hub, id string, conn *websocket.Conn) *WSClient {
+func NewWSClient(hub *ClientHub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
-		BaseClient: &BaseClient{
+		baseClient: &baseClient{
 			ID:  id,
 			Hub: hub,
 		},

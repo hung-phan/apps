@@ -3,8 +3,7 @@ package application
 import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
-	"github.com/hung-phan/chat-app/src/infrastructure/logger"
+	"github.com/hung-phan/chat-app/src/infrastructure"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 	"net/http"
@@ -18,7 +17,7 @@ var (
 	}
 )
 
-func CreateRouter(wsConnectionHandler func(client_manager.Client)) *mux.Router {
+func CreateRouter(wsConnectionHandler func(infrastructure.Client)) *mux.Router {
 	var (
 		router = mux.NewRouter()
 	)
@@ -29,11 +28,11 @@ func CreateRouter(wsConnectionHandler func(client_manager.Client)) *mux.Router {
 			conn, err := webSocketUpgrader.Upgrade(w, r, nil)
 
 			if err != nil {
-				logger.Client.Debug("websocket upgrade fail", zap.Error(err))
+				infrastructure.Log.Debug("websocket upgrade fail", zap.Error(err))
 				return
 			}
 
-			go wsConnectionHandler(client_manager.NewWSClient(
+			go wsConnectionHandler(infrastructure.NewWSClient(
 				DefaultWSHub,
 				ksuid.New().String(),
 				conn,

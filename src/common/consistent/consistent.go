@@ -10,11 +10,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/minio/blake2b-simd"
 	"math"
 	"sort"
 	"sync"
 	"sync/atomic"
-	"github.com/minio/blake2b-simd"
 )
 
 const replicationFactor = 10

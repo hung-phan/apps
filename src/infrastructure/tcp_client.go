@@ -1,9 +1,8 @@
-package client_manager
+package infrastructure
 
 import (
 	"bufio"
 	"errors"
-	"github.com/hung-phan/chat-app/src/infrastructure/logger"
 	"go.uber.org/zap"
 	"net"
 	"sync"
@@ -17,7 +16,7 @@ var (
 )
 
 type TCPClient struct {
-	*BaseClient
+	*baseClient
 
 	Conn    *net.TCPConn
 	once    sync.Once
@@ -43,6 +42,24 @@ func (tcpClient *TCPClient) GracefulShutdown() {
 	tcpClient.once.Do(tcpClient.shutdown)
 }
 
+func (tcpClient *TCPClient) shutdown() {
+	var err error = nil
+
+	err = tcpClient.Flush()
+
+	if err != nil {
+		Log.Error("fail to flush TCP", zap.Error(err))
+	}
+
+	err = tcpClient.Conn.Close()
+
+	if err != nil {
+		Log.Error("fail to close TCP connection", zap.Error(err))
+	}
+
+	tcpClient.Hub.Del(tcpClient.ID)
+}
+
 func (tcpClient *TCPClient) readPump() {
 	defer tcpClient.GracefulShutdown()
 
@@ -50,19 +67,13 @@ func (tcpClient *TCPClient) readPump() {
 		data, err := tcpClient.rw.ReadBytes('\n')
 
 		if err != nil {
-			logger.Client.Debug("tcp read fail", zap.Error(err), zap.String("ID", tcpClient.ID))
+			Log.Debug("tcp read fail", zap.Error(err), zap.String("ID", tcpClient.ID))
 			return
 		}
 
 		// trim the request string - ReadBytes does not strip any newlines
-		go tcpClient.Broadcast(data[:len(data)-1])
+		go tcpClient.Emit(data[:len(data)-1])
 	}
-}
-
-func (tcpClient *TCPClient) shutdown() {
-	tcpClient.Flush()
-	tcpClient.Conn.Close()
-	tcpClient.Hub.Del(tcpClient.ID)
 }
 
 func CreateTCPConnection(address string) (*net.TCPConn, error) {
@@ -95,9 +106,9 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 	return conn, nil
 }
 
-func NewTCPClient(hub *Hub, address string, conn *net.TCPConn) *TCPClient {
+func NewTCPClient(hub *ClientHub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
-		BaseClient: &BaseClient{
+		baseClient: &baseClient{
 			ID:  address,
 			Hub: hub,
 		},

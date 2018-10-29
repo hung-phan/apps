@@ -1,9 +1,8 @@
-package infrastructure
+package application
 
 import (
 	"bufio"
-	"github.com/hung-phan/chat-app/src/application"
-	"github.com/hung-phan/chat-app/src/infrastructure/client_manager"
+	"github.com/hung-phan/chat-app/src/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
@@ -22,9 +21,9 @@ func TestInfrastructure(t *testing.T) {
 		var (
 			tcpStopSignal        = make(chan bool)
 			msg                  = "Message"
-			tcpConnectionHandler = func(client client_manager.Client) {
+			tcpConnectionHandler = func(client infrastructure.Client) {
 				client.AddListener(func(data []byte) {
-					client.GetHub().Broadcast(data)
+					client.Write(data)
 
 					// enough time for client to send the message so we can force
 					// the connection to flush it later
@@ -40,17 +39,17 @@ func TestInfrastructure(t *testing.T) {
 			}
 		)
 
-		go StartTCPServer(
+		go infrastructure.StartTCPServer(
 			"localhost:3001",
 			tcpStopSignal,
-			client_manager.NewHub(),
+			infrastructure.NewHub(),
 			tcpConnectionHandler,
 		)
 
 		// wait for server to start
 		jitter()
 
-		tcpConn, err := client_manager.CreateTCPConnection("localhost:3001")
+		tcpConn, err := infrastructure.CreateTCPConnection("localhost:3001")
 		assertError(err)
 
 		rw := bufio.NewReadWriter(bufio.NewReader(tcpConn), bufio.NewWriter(tcpConn))
@@ -72,17 +71,17 @@ func TestInfrastructure(t *testing.T) {
 	t.Run("test StartHTTPServer", func(t *testing.T) {
 		var (
 			httpStopSignal      = make(chan bool)
-			wsConnectionHandler = func(client client_manager.Client) {
+			wsConnectionHandler = func(client infrastructure.Client) {
 				client.AddListener(func(data []byte) {
-					client.GetHub().Broadcast(data)
+					client.Write(data)
 				})
 			}
 		)
 
-		go StartHTTPServer(
+		go infrastructure.StartHTTPServer(
 			"localhost:3000",
 			httpStopSignal,
-			application.CreateRouter(wsConnectionHandler),
+			CreateRouter(wsConnectionHandler),
 		)
 
 		// wait for server to start
