@@ -7,10 +7,10 @@
 package consistent
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/minio/blake2b-simd"
 	"math"
 	"sort"
 	"sync"
@@ -251,6 +251,6 @@ func (c *Consistent) delSlice(val uint64) {
 }
 
 func (c *Consistent) hash(key string) uint64 {
-	out := blake2b.Sum512([]byte(key))
+	out := sha256.Sum256([]byte(key))
 	return binary.LittleEndian.Uint64(out[:])
 }

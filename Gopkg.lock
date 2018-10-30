@@ -34,14 +34,6 @@
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:130cefe87d7eeefc824978dcb78e35672d4c49a11f25c153fbf0cfd952756fa3"
-  name = "github.com/minio/blake2b-simd"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4"
-
-[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -102,7 +94,6 @@
   input-imports = [
     "github.com/gorilla/mux",
     "github.com/gorilla/websocket",
-    "github.com/minio/blake2b-simd",
     "github.com/segmentio/ksuid",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",
