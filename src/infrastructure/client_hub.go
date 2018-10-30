@@ -32,7 +32,7 @@ func (ch *ClientHub) Del(key string) {
 	delete(ch.clients, key)
 }
 
-func (ch *ClientHub) Broadcast(fn func(Client)) {
+func (ch *ClientHub) ExecuteAll(fn ClientHandler) {
 	ch.rwMutex.RLock()
 	defer ch.rwMutex.RUnlock()
 

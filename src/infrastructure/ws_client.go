@@ -79,7 +79,7 @@ func (wsClient *WSClient) readPump() {
 			return
 		}
 
-		go wsClient.Emit(data)
+		go wsClient.emit(data)
 	}
 }
 

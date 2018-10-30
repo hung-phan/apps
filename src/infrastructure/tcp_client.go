@@ -72,7 +72,7 @@ func (tcpClient *TCPClient) readPump() {
 		}
 
 		// trim the request string - ReadBytes does not strip any newlines
-		go tcpClient.Emit(data[:len(data)-1])
+		go tcpClient.emit(data[:len(data)-1])
 	}
 }
 

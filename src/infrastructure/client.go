@@ -2,10 +2,7 @@ package infrastructure
 
 type OnDataListener func([]byte)
 
-type ClientBroadcastResult struct {
-	nn  int
-	err error
-}
+type ClientHandler func(Client)
 
 type Client interface {
 	GetID() string

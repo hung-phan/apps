@@ -49,7 +49,7 @@ func (bc *baseClient) RemoveListener(listener OnDataListener) {
 	}
 }
 
-func (bc *baseClient) Emit(data []byte) {
+func (bc *baseClient) emit(data []byte) {
 	bc.listenersMutex.RLock()
 	defer bc.listenersMutex.RUnlock()
 

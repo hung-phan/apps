@@ -15,7 +15,7 @@ func StartTCPServer(
 	address string,
 	shutdownSignal chan bool,
 	hub *ClientHub,
-	connectionHandler func(Client),
+	ch ClientHandler,
 ) {
 	listener, err := net.Listen("tcp", address)
 
@@ -53,14 +53,14 @@ func StartTCPServer(
 	for {
 		select {
 		case conn := <-connCh:
-			go connectionHandler(NewTCPClient(
+			go ch(NewTCPClient(
 				hub,
 				ksuid.New().String(),
 				conn,
 			))
 
 		case <-shutdownSignal:
-			hub.Broadcast(func(client Client) {
+			hub.ExecuteAll(func(client Client) {
 				client.GracefulShutdown()
 			})
 			listener.Close()
