@@ -45,6 +45,8 @@ func (tcpClient *TCPClient) GracefulShutdown() {
 func (tcpClient *TCPClient) shutdown() {
 	var err error = nil
 
+	tcpClient.isClientShutdown = true
+
 	err = tcpClient.Flush()
 
 	if err != nil {
@@ -57,7 +59,7 @@ func (tcpClient *TCPClient) shutdown() {
 		Log.Error("fail to close TCP connection", zap.Error(err))
 	}
 
-	tcpClient.Hub.Del(tcpClient.ID)
+	tcpClient.GetHub().Del(tcpClient.GetID())
 }
 
 func (tcpClient *TCPClient) readPump() {
@@ -67,12 +69,12 @@ func (tcpClient *TCPClient) readPump() {
 		data, err := tcpClient.rw.ReadBytes('\n')
 
 		if err != nil {
-			Log.Debug("tcp read fail", zap.Error(err), zap.String("ID", tcpClient.ID))
+			Log.Debug("tcp read fail", zap.Error(err), zap.String("id", tcpClient.GetID()))
 			return
 		}
 
 		// trim the request string - ReadBytes does not strip any newlines
-		go tcpClient.emit(data[:len(data)-1])
+		go tcpClient.broadcastToChannel(data[:len(data)-1])
 	}
 }
 
@@ -109,8 +111,8 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 func NewTCPClient(hub *ClientHub, address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
 		baseClient: &baseClient{
-			ID:  address,
-			Hub: hub,
+			id:  address,
+			hub: hub,
 		},
 		Conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),

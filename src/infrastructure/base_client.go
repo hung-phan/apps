@@ -5,18 +5,19 @@ import (
 )
 
 type baseClient struct {
-	ID            string
-	Hub           *ClientHub
-	channels      []DataChannel
-	channelsMutex sync.RWMutex
+	id               string
+	hub              *ClientHub
+	isClientShutdown bool
+	channels         []DataChannel
+	channelsMutex    sync.RWMutex
 }
 
 func (bc *baseClient) GetID() string {
-	return bc.ID
+	return bc.id
 }
 
 func (bc *baseClient) GetHub() *ClientHub {
-	return bc.Hub
+	return bc.hub
 }
 
 func (bc *baseClient) AddListener(ch DataChannel) {
@@ -39,7 +40,11 @@ func (bc *baseClient) RemoveListener(ch DataChannel) {
 	}
 }
 
-func (bc *baseClient) emit(data []byte) {
+func (bc *baseClient) IsShutdown() bool {
+	return bc.isClientShutdown
+}
+
+func (bc *baseClient) broadcastToChannel(data []byte) {
 	bc.channelsMutex.RLock()
 	defer bc.channelsMutex.RUnlock()
 

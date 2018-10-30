@@ -39,6 +39,8 @@ func (wsClient *WSClient) GracefulShutdown() {
 func (wsClient *WSClient) shutdown() {
 	var err error = nil
 
+	wsClient.isClientShutdown = true
+
 	err = wsClient.sendCloseSignal()
 
 	if err != nil {
@@ -51,7 +53,7 @@ func (wsClient *WSClient) shutdown() {
 		Log.Error("fail to close WebSocket connection", zap.Error(err))
 	}
 
-	wsClient.Hub.Del(wsClient.ID)
+	wsClient.GetHub().Del(wsClient.GetID())
 }
 
 func (wsClient *WSClient) sendCloseSignal() error {
@@ -74,20 +76,20 @@ func (wsClient *WSClient) readPump() {
 				websocket.CloseNoStatusReceived,
 				websocket.CloseAbnormalClosure,
 			) {
-				Log.Debug("ws read fail", zap.Error(err), zap.String("ID", wsClient.ID))
+				Log.Debug("ws read fail", zap.Error(err), zap.String("id", wsClient.GetID()))
 			}
 			return
 		}
 
-		go wsClient.emit(data)
+		go wsClient.broadcastToChannel(data)
 	}
 }
 
 func NewWSClient(hub *ClientHub, id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
 		baseClient: &baseClient{
-			ID:  id,
-			Hub: hub,
+			id:  id,
+			hub: hub,
 		},
 		Conn: conn,
 	}

@@ -13,7 +13,15 @@ func TCPConnectionHandler(tcpClient infrastructure.Client) {
 	ch := make(infrastructure.DataChannel)
 
 	go func() {
-		for data := range ch {
+		defer close(ch)
+
+		for {
+			if tcpClient.IsShutdown() {
+				break
+			}
+
+			data := <- ch
+
 			tcpClient.Write(data)
 		}
 	}()
@@ -25,7 +33,15 @@ func WSConnectionHandler(wsClient infrastructure.Client) {
 	ch := make(infrastructure.DataChannel)
 
 	go func() {
-		for data := range ch {
+		defer close(ch)
+
+		for {
+			if wsClient.IsShutdown() {
+				break
+			}
+
+			data := <- ch
+
 			wsClient.Write(data)
 		}
 	}()

@@ -11,5 +11,6 @@ type Client interface {
 	RemoveListener(DataChannel)
 	Write([]byte) (int, error)
 	Flush() error
+	IsShutdown() bool
 	GracefulShutdown()
 }
