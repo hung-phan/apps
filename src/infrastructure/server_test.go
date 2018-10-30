@@ -26,21 +26,24 @@ func TestInfrastructure(t *testing.T) {
 			tcpStopSignal        = make(chan bool)
 			msg                  = "Message"
 			tcpConnectionHandler = func(client Client) {
-				var listener OnDataListener
+				ch := make(DataChannel)
 
-				listener = func(data []byte) {
-					defer client.RemoveListener(listener)
+				go func() {
+					for data := range ch {
+						client.Write(data)
 
-					client.Write(data)
+						// enough time for client to send the message so we can force
+						// the connection to flush it later
+						jitter()
 
-					// enough time for client to send the message so we can force
-					// the connection to flush it later
-					jitter()
+						client.Flush()
+						client.RemoveListener(ch)
 
-					client.Flush()
-				}
+						close(ch)
+					}
+				}()
 
-				client.AddListener(listener)
+				client.AddListener(ch)
 			}
 			assertError = func(err error) {
 				if err != nil {
@@ -88,15 +91,19 @@ func TestInfrastructure(t *testing.T) {
 				},
 			}
 			wsConnectionHandler = func(client Client) {
-				var listener OnDataListener
+				ch := make(DataChannel)
 
-				listener = func(data []byte) {
-					defer client.RemoveListener(listener)
+				go func() {
+					for data := range ch {
+						client.Write(data)
 
-					client.Write(data)
-				}
+						client.RemoveListener(ch)
 
-				client.AddListener(listener)
+						close(ch)
+					}
+				}()
+
+				client.AddListener(ch)
 			}
 		)
 

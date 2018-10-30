@@ -10,13 +10,25 @@ var (
 )
 
 func TCPConnectionHandler(tcpClient infrastructure.Client) {
-	tcpClient.AddListener(func(data []byte) {
-		tcpClient.Write(data)
-	})
+	ch := make(infrastructure.DataChannel)
+
+	go func() {
+		for data := range ch {
+			tcpClient.Write(data)
+		}
+	}()
+
+	tcpClient.AddListener(ch)
 }
 
 func WSConnectionHandler(wsClient infrastructure.Client) {
-	wsClient.AddListener(func(data []byte) {
-		wsClient.Write(data)
-	})
+	ch := make(infrastructure.DataChannel)
+
+	go func() {
+		for data := range ch {
+			wsClient.Write(data)
+		}
+	}()
+
+	wsClient.AddListener(ch)
 }
