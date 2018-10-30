@@ -2,6 +2,7 @@ package application
 
 import (
 	"github.com/hung-phan/chat-app/src/infrastructure"
+	"time"
 )
 
 var (
@@ -20,9 +21,12 @@ func TCPConnectionHandler(tcpClient infrastructure.Client) {
 				break
 			}
 
-			data := <- ch
-
-			tcpClient.Write(data)
+			select {
+			case data := <- ch:
+				tcpClient.Write(data)
+			case <- time.After(5 * time.Second):
+				// do nothing
+			}
 		}
 	}()
 
@@ -40,9 +44,12 @@ func WSConnectionHandler(wsClient infrastructure.Client) {
 				break
 			}
 
-			data := <- ch
-
-			wsClient.Write(data)
+			select {
+			case data := <- ch:
+				wsClient.Write(data)
+			case <- time.After(5 * time.Second):
+				// do nothing
+			}
 		}
 	}()
 
