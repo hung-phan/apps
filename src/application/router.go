@@ -15,7 +15,7 @@ var webSocketUpgrader = websocket.Upgrader{
 	},
 }
 
-func CreateRouter(wsCh infrastructure.ClientHandler) *mux.Router {
+func CreateRouter() *mux.Router {
 	var router = mux.NewRouter()
 
 	router.HandleFunc(
@@ -28,7 +28,7 @@ func CreateRouter(wsCh infrastructure.ClientHandler) *mux.Router {
 				return
 			}
 
-			go wsCh(infrastructure.NewWSClient(
+			go WSConnectionHandler(infrastructure.NewWSClient(
 				DefaultWSHub,
 				ksuid.New().String(),
 				conn,

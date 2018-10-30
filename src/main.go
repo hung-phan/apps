@@ -21,7 +21,7 @@ func main() {
 	go infrastructure.StartHTTPServer(
 		":3000",
 		httpStopSignal,
-		application.CreateRouter(application.WSConnectionHandler),
+		application.CreateRouter(),
 	)
 
 	go infrastructure.StartTCPServer(
