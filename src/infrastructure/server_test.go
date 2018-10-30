@@ -1,10 +1,14 @@
-package application
+package infrastructure
 
 import (
 	"bufio"
-	"github.com/hung-phan/chat-app/src/infrastructure"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
+	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"math/rand"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -21,8 +25,12 @@ func TestInfrastructure(t *testing.T) {
 		var (
 			tcpStopSignal        = make(chan bool)
 			msg                  = "Message"
-			tcpConnectionHandler = func(client infrastructure.Client) {
-				client.AddListener(func(data []byte) {
+			tcpConnectionHandler = func(client Client) {
+				var listener OnDataListener
+
+				listener = func(data []byte) {
+					defer client.RemoveListener(listener)
+
 					client.Write(data)
 
 					// enough time for client to send the message so we can force
@@ -30,7 +38,9 @@ func TestInfrastructure(t *testing.T) {
 					jitter()
 
 					client.Flush()
-				})
+				}
+
+				client.AddListener(listener)
 			}
 			assertError = func(err error) {
 				if err != nil {
@@ -39,17 +49,17 @@ func TestInfrastructure(t *testing.T) {
 			}
 		)
 
-		go infrastructure.StartTCPServer(
+		go StartTCPServer(
 			"localhost:3001",
 			tcpStopSignal,
-			infrastructure.NewHub(),
+			NewHub(),
 			tcpConnectionHandler,
 		)
 
 		// wait for server to start
 		jitter()
 
-		tcpConn, err := infrastructure.CreateTCPConnection("localhost:3001")
+		tcpConn, err := CreateTCPConnection("localhost:3001")
 		assertError(err)
 
 		rw := bufio.NewReadWriter(bufio.NewReader(tcpConn), bufio.NewWriter(tcpConn))
@@ -70,18 +80,48 @@ func TestInfrastructure(t *testing.T) {
 
 	t.Run("test StartHTTPServer", func(t *testing.T) {
 		var (
-			httpStopSignal      = make(chan bool)
-			wsConnectionHandler = func(client infrastructure.Client) {
-				client.AddListener(func(data []byte) {
+			router            = mux.NewRouter()
+			httpStopSignal    = make(chan bool)
+			webSocketUpgrader = websocket.Upgrader{
+				CheckOrigin: func(r *http.Request) bool {
+					return true
+				},
+			}
+			wsConnectionHandler = func(client Client) {
+				var listener OnDataListener
+
+				listener = func(data []byte) {
+					defer client.RemoveListener(listener)
+
 					client.Write(data)
-				})
+				}
+
+				client.AddListener(listener)
 			}
 		)
 
-		go infrastructure.StartHTTPServer(
+		router.HandleFunc(
+			"/ws",
+			func(w http.ResponseWriter, r *http.Request) {
+				conn, err := webSocketUpgrader.Upgrade(w, r, nil)
+
+				if err != nil {
+					Log.Fatal("websocket upgrade fail", zap.Error(err))
+					return
+				}
+
+				go wsConnectionHandler(NewWSClient(
+					NewHub(),
+					ksuid.New().String(),
+					conn,
+				))
+			},
+		)
+
+		go StartHTTPServer(
 			"localhost:3000",
 			httpStopSignal,
-			CreateRouter(wsConnectionHandler),
+			router,
 		)
 
 		// wait for server to start

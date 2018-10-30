@@ -9,18 +9,14 @@ import (
 	"net/http"
 )
 
-var (
-	webSocketUpgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-)
+var webSocketUpgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 func CreateRouter(wsConnectionHandler func(infrastructure.Client)) *mux.Router {
-	var (
-		router = mux.NewRouter()
-	)
+	var router = mux.NewRouter()
 
 	router.HandleFunc(
 		"/ws",
