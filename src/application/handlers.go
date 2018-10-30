@@ -22,9 +22,9 @@ func TCPConnectionHandler(tcpClient infrastructure.Client) {
 			}
 
 			select {
-			case data := <- ch:
+			case data := <-ch:
 				tcpClient.Write(data)
-			case <- time.After(5 * time.Second):
+			case <-time.After(5 * time.Second):
 				// do nothing
 			}
 		}
@@ -45,9 +45,9 @@ func WSConnectionHandler(wsClient infrastructure.Client) {
 			}
 
 			select {
-			case data := <- ch:
+			case data := <-ch:
 				wsClient.Write(data)
-			case <- time.After(5 * time.Second):
+			case <-time.After(5 * time.Second):
 				// do nothing
 			}
 		}
