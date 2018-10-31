@@ -2,10 +2,6 @@ sudo: required
 
 language: go
 
-matrix:
-  include:
-  - go: 1.10.x
-
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - dep ensure
