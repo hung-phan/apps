@@ -31,6 +31,8 @@ func TCPConnectionHandler(tcpClient infrastructure.Client) {
 			}
 		}
 	}()
+
+	tcpClient.Start()
 }
 
 func WSConnectionHandler(wsClient infrastructure.Client) {
@@ -54,4 +56,6 @@ func WSConnectionHandler(wsClient infrastructure.Client) {
 			}
 		}
 	}()
+
+	wsClient.Start()
 }

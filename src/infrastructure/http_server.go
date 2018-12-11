@@ -30,6 +30,6 @@ func StartHTTPServer(
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		Log.Fatal("failed to shutdown HTTP server:", zap.Error(err))
+		Log.Fatal("failed to gracefulShutdown HTTP server:", zap.Error(err))
 	}
 }

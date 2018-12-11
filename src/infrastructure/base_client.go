@@ -5,11 +5,12 @@ import (
 )
 
 type baseClient struct {
-	id               string
-	hub              *ClientHub
-	isClientShutdown bool
-	channels         []DataChannel
-	channelsMutex    sync.RWMutex
+	id            string
+	hub           *ClientHub
+	isStarted     bool
+	isShutdown    bool
+	channels      []DataChannel
+	channelsMutex sync.RWMutex
 }
 
 func (bc *baseClient) GetID() string {
@@ -40,8 +41,12 @@ func (bc *baseClient) RemoveListener(ch DataChannel) {
 	}
 }
 
+func (bc *baseClient) IsStarted() bool {
+	return bc.isStarted
+}
+
 func (bc *baseClient) IsShutdown() bool {
-	return bc.isClientShutdown
+	return bc.isShutdown
 }
 
 func (bc *baseClient) broadcastToChannel(data []byte) {

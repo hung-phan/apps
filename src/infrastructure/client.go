@@ -9,8 +9,10 @@ type Client interface {
 	GetHub() *ClientHub
 	AddListener(DataChannel)
 	RemoveListener(DataChannel)
+	Start()
+	Shutdown()
 	Write([]byte) (int, error)
 	Flush() error
+	IsStarted() bool
 	IsShutdown() bool
-	GracefulShutdown()
 }

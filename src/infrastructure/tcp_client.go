@@ -18,52 +18,47 @@ var (
 type TCPClient struct {
 	*baseClient
 
-	Conn    *net.TCPConn
-	once    sync.Once
-	ioMutex sync.Mutex
-	rw      *bufio.ReadWriter
+	conn         *net.TCPConn
+	startOnce    sync.Once
+	shutdownOnce sync.Once
+	m            sync.Mutex
+	rw           *bufio.ReadWriter
+}
+
+func (tcpClient *TCPClient) Start() {
+	tcpClient.m.Lock()
+	defer tcpClient.m.Unlock()
+
+	tcpClient.isStarted = true
+
+	go tcpClient.startOnce.Do(tcpClient.readPump)
+}
+
+func (tcpClient *TCPClient) Shutdown() {
+	tcpClient.m.Lock()
+	defer tcpClient.m.Unlock()
+
+	tcpClient.isShutdown = true
+
+	go tcpClient.shutdownOnce.Do(tcpClient.gracefulShutdown)
 }
 
 func (tcpClient *TCPClient) Write(data []byte) (int, error) {
-	tcpClient.ioMutex.Lock()
-	defer tcpClient.ioMutex.Unlock()
+	tcpClient.m.Lock()
+	defer tcpClient.m.Unlock()
 
 	return tcpClient.rw.Write(append(data, '\n'))
 }
 
 func (tcpClient *TCPClient) Flush() error {
-	tcpClient.ioMutex.Lock()
-	defer tcpClient.ioMutex.Unlock()
+	tcpClient.m.Lock()
+	defer tcpClient.m.Unlock()
 
 	return tcpClient.rw.Flush()
 }
 
-func (tcpClient *TCPClient) GracefulShutdown() {
-	tcpClient.once.Do(tcpClient.shutdown)
-}
-
-func (tcpClient *TCPClient) shutdown() {
-	var err error = nil
-
-	tcpClient.isClientShutdown = true
-
-	err = tcpClient.Flush()
-
-	if err != nil {
-		Log.Error("fail to flush TCP", zap.Error(err))
-	}
-
-	err = tcpClient.Conn.Close()
-
-	if err != nil {
-		Log.Error("fail to close TCP connection", zap.Error(err))
-	}
-
-	tcpClient.GetHub().Del(tcpClient.GetID())
-}
-
 func (tcpClient *TCPClient) readPump() {
-	defer tcpClient.GracefulShutdown()
+	defer tcpClient.Shutdown()
 
 	for {
 		data, err := tcpClient.rw.ReadBytes('\n')
@@ -76,6 +71,22 @@ func (tcpClient *TCPClient) readPump() {
 		// trim the request string - ReadBytes does not strip any newlines
 		go tcpClient.broadcastToChannel(data[:len(data)-1])
 	}
+}
+
+func (tcpClient *TCPClient) gracefulShutdown() {
+	err := tcpClient.Flush()
+
+	if err != nil {
+		Log.Error("fail to flush TCP", zap.Error(err))
+	}
+
+	err = tcpClient.conn.Close()
+
+	if err != nil {
+		Log.Error("fail to close TCP connection", zap.Error(err))
+	}
+
+	tcpClient.GetHub().Del(tcpClient.GetID())
 }
 
 func CreateTCPConnection(address string) (*net.TCPConn, error) {
@@ -122,13 +133,11 @@ func NewTCPClient(hub *ClientHub, address string, conn *net.TCPConn) *TCPClient 
 			id:  address,
 			hub: hub,
 		},
-		Conn: conn,
+		conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
 	}
 
 	hub.Set(address, client)
-
-	go client.readPump()
 
 	return client
 }

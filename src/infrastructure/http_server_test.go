@@ -41,6 +41,8 @@ func TestStartHTTPServer(t *testing.T) {
 						close(ch)
 					}
 				}()
+
+				client.Start()
 			}
 		)
 

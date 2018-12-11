@@ -57,7 +57,7 @@ func StartTCPServer(
 
 		case <-shutdownSignal:
 			hub.ExecuteAll(func(client Client) {
-				client.GracefulShutdown()
+				client.Shutdown()
 			})
 
 			m.Lock()
