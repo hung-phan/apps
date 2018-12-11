@@ -12,38 +12,36 @@ func TestStartTCPServer(t *testing.T) {
 	var (
 		assertInstance = assert.New(t)
 		jitter         = func() {
-			time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
 		}
 	)
 
 	t.Run("test StartTCPServer", func(t *testing.T) {
 		var (
-			tcpStopSignal        = make(chan bool)
-			msg                  = "Message"
-			tcpConnectionHandler = func(client Client) {
-				ch := make(DataChannel)
-
-				go func() {
-					for data := range ch {
-						client.Write(data)
-
-						// enough time for client to send the message so we can force
-						// the connection to flush it later
-						jitter()
-
-						client.Flush()
-						client.RemoveListener(ch)
-
-						close(ch)
-					}
-				}()
-
-				client.AddListener(ch)
-			}
-			assertError = func(err error) {
+			tcpStopSignal = make(chan bool)
+			msg           = "Message"
+			assertError   = func(err error) {
 				if err != nil {
 					assertInstance.Fail(err.Error())
 				}
+			}
+			tcpConnectionHandler = func(client Client) {
+				ch := make(DataChannel)
+
+				client.AddListener(ch)
+
+				go func() {
+					for data := range ch {
+						_, err := client.Write(data)
+						assertError(err)
+
+						err = client.Flush()
+						assertError(err)
+
+						client.RemoveListener(ch)
+						close(ch)
+					}
+				}()
 			}
 		)
 

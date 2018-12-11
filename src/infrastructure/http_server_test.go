@@ -30,17 +30,17 @@ func TestStartHTTPServer(t *testing.T) {
 			wsConnectionHandler = func(client Client) {
 				ch := make(DataChannel)
 
+				client.AddListener(ch)
+
 				go func() {
 					for data := range ch {
-						client.Write(data)
+						_, _ = client.Write(data)
 
 						client.RemoveListener(ch)
 
 						close(ch)
 					}
 				}()
-
-				client.AddListener(ch)
 			}
 		)
 

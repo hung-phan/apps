@@ -13,6 +13,8 @@ var (
 func TCPConnectionHandler(tcpClient infrastructure.Client) {
 	ch := make(infrastructure.DataChannel)
 
+	tcpClient.AddListener(ch)
+
 	go func() {
 		defer close(ch)
 
@@ -23,18 +25,18 @@ func TCPConnectionHandler(tcpClient infrastructure.Client) {
 
 			select {
 			case data := <-ch:
-				tcpClient.Write(data)
+				_, _ = tcpClient.Write(data)
 			case <-time.After(5 * time.Second):
 				// do nothing
 			}
 		}
 	}()
-
-	tcpClient.AddListener(ch)
 }
 
 func WSConnectionHandler(wsClient infrastructure.Client) {
 	ch := make(infrastructure.DataChannel)
+
+	wsClient.AddListener(ch)
 
 	go func() {
 		defer close(ch)
@@ -46,12 +48,10 @@ func WSConnectionHandler(wsClient infrastructure.Client) {
 
 			select {
 			case data := <-ch:
-				wsClient.Write(data)
+				_, _ = wsClient.Write(data)
 			case <-time.After(5 * time.Second):
 				// do nothing
 			}
 		}
 	}()
-
-	wsClient.AddListener(ch)
 }

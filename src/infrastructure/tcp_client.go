@@ -94,13 +94,21 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 	}
 
 	if err = conn.SetKeepAlive(true); err != nil {
-		defer conn.Close()
+		defer func() {
+			if err := conn.Close(); err != nil {
+				Log.Error("fail to close TCP connection", zap.Error(err))
+			}
+		}()
 
 		return nil, ErrCannotKeepAliveTCPConnection
 	}
 
 	if err = conn.SetKeepAlivePeriod(30 * time.Minute); err != nil {
-		defer conn.Close()
+		defer func() {
+			if err := conn.Close(); err != nil {
+				Log.Error("fail to close TCP connection", zap.Error(err))
+			}
+		}()
 
 		return nil, ErrCannotKeepAliveTCPConnection
 	}
