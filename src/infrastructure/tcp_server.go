@@ -23,17 +23,17 @@ func StartTCPServer(
 
 	var (
 		connCh     = make(chan *net.TCPConn)
-		rwMutex    = sync.Mutex{}
+		m          = sync.Mutex{}
 		isShutdown = false
 	)
 
 	go func() {
 		for {
-			rwMutex.Lock()
+			m.Lock()
 			if isShutdown {
 				break
 			}
-			rwMutex.Unlock()
+			m.Unlock()
 
 			conn, err := listener.Accept()
 
@@ -59,11 +59,14 @@ func StartTCPServer(
 			hub.ExecuteAll(func(client Client) {
 				client.GracefulShutdown()
 			})
-			listener.Close()
 
-			rwMutex.Lock()
+			m.Lock()
 			isShutdown = true
-			rwMutex.Unlock()
+			m.Unlock()
+
+			if err := listener.Close(); err != nil {
+				Log.Fatal("failed to TCP server:", zap.Error(err))
+			}
 		}
 	}
 }
