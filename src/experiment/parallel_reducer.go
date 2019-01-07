@@ -1,4 +1,4 @@
-package main
+package experiment
 
 import (
 	"github.com/hung-phan/apps/src/lib/parallel"
@@ -45,19 +45,4 @@ func parallelReduce(
 
 		return fn(res[0], res[1])
 	}
-}
-
-func main() {
-	arr := make([]int, 100000)
-
-	for i := range arr {
-		arr[i] = i
-	}
-
-	add := func(a, b parallel.Val) parallel.Val {
-		return a.(int) + b.(int)
-	}
-	res := parallelReduce(arr, add, 0, len(arr)-1)
-
-	println(res.(int))
 }
