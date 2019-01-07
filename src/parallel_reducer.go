@@ -20,9 +20,9 @@ func sequentialReduce(arr []int, low, high int) int {
 
 func parallelReduce(
 	arr []int,
-	fn func(a, b parallel.Result) parallel.Result,
+	fn func(a, b parallel.Val) parallel.Val,
 	low, high int,
-) parallel.Result {
+) parallel.Val {
 	switch {
 
 	case low > high:
@@ -35,10 +35,10 @@ func parallelReduce(
 		mid := low + (high-low)/2
 
 		res := parallel.Parallel(
-			func() parallel.Result {
+			func() parallel.Val {
 				return parallelReduce(arr, fn, low, mid-1)
 			},
-			func() parallel.Result {
+			func() parallel.Val {
 				return parallelReduce(arr, fn, mid, high)
 			},
 		)
@@ -54,7 +54,7 @@ func main() {
 		arr[i] = i
 	}
 
-	add := func(a, b parallel.Result) parallel.Result {
+	add := func(a, b parallel.Val) parallel.Val {
 		return a.(int) + b.(int)
 	}
 	res := parallelReduce(arr, add, 0, len(arr)-1)
