@@ -10,7 +10,7 @@ import (
 func TestParallelReducer(t *testing.T) {
 	assertInstance := assert.New(t)
 
-	testCase := []int{10, 100, 1000, 1000, 10000, 100000, 1000000}
+	testCase := []int{10, 100, 1000, 10000, 100000, 1000000}
 
 	for _, N := range testCase {
 		t.Run(fmt.Sprintf("test ParallelReducer for %d", N), func(t *testing.T) {

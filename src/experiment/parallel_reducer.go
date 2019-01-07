@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	THRESHOLD = 1000
+	THRESHOLD = 5000
 )
 
 func sequentialReduce(arr []int, low, high int) int {
