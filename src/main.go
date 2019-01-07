@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/hung-phan/chat-app/src/application"
-	"github.com/hung-phan/chat-app/src/infrastructure"
+	"github.com/hung-phan/apps/src/application"
+	"github.com/hung-phan/apps/src/infrastructure"
 	"os"
 	"os/signal"
 	"syscall"

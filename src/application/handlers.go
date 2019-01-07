@@ -1,7 +1,7 @@
 package application
 
 import (
-	"github.com/hung-phan/chat-app/src/infrastructure"
+	"github.com/hung-phan/apps/src/infrastructure"
 	"time"
 )
 
