@@ -8,10 +8,10 @@ const (
 	THRESHOLD = 5000
 )
 
-func sequentialReduce(arr []int, low, high int) int {
+func sequentialReduce(arr []int, from, to int) int {
 	sum := 0
 
-	for i := low; i <= high; i++ {
+	for i := from; i <= to; i++ {
 		sum += arr[i]
 	}
 
@@ -21,25 +21,25 @@ func sequentialReduce(arr []int, low, high int) int {
 func parallelReduce(
 	arr []int,
 	fn func(a, b parallel.Val) parallel.Val,
-	low, high int,
+	from, to int,
 ) parallel.Val {
 	switch {
 
-	case low > high:
+	case from > to:
 		return 0
 
-	case high-low+1 < THRESHOLD:
-		return sequentialReduce(arr, low, high)
+	case to-from+1 < THRESHOLD:
+		return sequentialReduce(arr, from, to)
 
 	default:
-		mid := low + (high-low)/2
+		mid := from + (to-from)/2
 
 		res := parallel.Parallel(
 			func() parallel.Val {
-				return parallelReduce(arr, fn, low, mid-1)
+				return parallelReduce(arr, fn, from, mid-1)
 			},
 			func() parallel.Val {
-				return parallelReduce(arr, fn, mid, high)
+				return parallelReduce(arr, fn, mid, to)
 			},
 		)
 
