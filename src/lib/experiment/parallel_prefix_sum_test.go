@@ -19,7 +19,7 @@ func TestParallelPrefixSum(t *testing.T) {
 				input[i] = i
 			}
 
-			parallelPrefixSum(input, output, 100)
+			parallelPrefixSum(input, output, 0, 100)
 
 			currentVal := 0
 

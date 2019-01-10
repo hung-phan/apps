@@ -116,6 +116,6 @@ func downsweep(input, output []int, startVal int, tree ITree) {
 	}
 }
 
-func parallelPrefixSum(input, output []int, threshold int) {
-	downsweep(input, output, 0, upsweep(input, 0, len(input), threshold))
+func parallelPrefixSum(input, output []int, startVal, threshold int) {
+	downsweep(input, output, startVal, upsweep(input, 0, len(input), threshold))
 }
