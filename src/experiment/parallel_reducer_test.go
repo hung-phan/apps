@@ -24,7 +24,7 @@ func TestParallelReducer(t *testing.T) {
 				add = func(a, b parallel.Val) parallel.Val {
 					return a.(int) + b.(int)
 				}
-				res = parallelReduce(arr, add, 0, len(arr)-1)
+				res = parallelReduce(arr, add, 0, len(arr))
 			)
 
 			assertInstance.Equal(res, N*(N-1)/2)
