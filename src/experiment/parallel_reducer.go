@@ -4,10 +4,6 @@ import (
 	"github.com/hung-phan/apps/src/lib/parallel"
 )
 
-const (
-	THRESHOLD = 5000
-)
-
 func sequentialReduce(arr []int, from, until int) int {
 	sum := 0
 
@@ -22,13 +18,14 @@ func parallelReduce(
 	arr []int,
 	fn func(a, b parallel.Val) parallel.Val,
 	from, until int,
+	threshold int,
 ) parallel.Val {
 	switch {
 
 	case from >= until:
 		return 0
 
-	case until-from < THRESHOLD:
+	case until-from < threshold:
 		return sequentialReduce(arr, from, until)
 
 	default:
@@ -36,10 +33,10 @@ func parallelReduce(
 
 		res := parallel.Parallel(
 			func() parallel.Val {
-				return parallelReduce(arr, fn, from, mid)
+				return parallelReduce(arr, fn, from, mid, threshold)
 			},
 			func() parallel.Val {
-				return parallelReduce(arr, fn, mid, until)
+				return parallelReduce(arr, fn, mid, until, threshold)
 			},
 		)
 
