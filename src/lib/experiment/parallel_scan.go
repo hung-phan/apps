@@ -80,7 +80,11 @@ func upsweep(input []int, from, until int, threshold int) ITree {
 	}
 }
 
-func downsweepSequential(input, output []int, startVal int, from, until int) {
+func downsweepSequential(
+	input, output []int,
+	startVal int,
+	from, until int,
+) {
 	if from < until {
 		currentVal := startVal + input[from]
 
@@ -91,7 +95,11 @@ func downsweepSequential(input, output []int, startVal int, from, until int) {
 }
 
 // reduce func
-func downsweep(input, output []int, startVal int, tree ITree) {
+func downsweep(
+	input, output []int,
+	startVal int,
+	tree ITree,
+) {
 	switch val := tree.(type) {
 
 	case Leaf:
@@ -105,7 +113,7 @@ func downsweep(input, output []int, startVal int, tree ITree) {
 				return nil
 			},
 			func() parallel.Val {
-				downsweep(input, output, startVal+val.Left.GetVal(), val.Right)
+				downsweep(input, output, startVal + val.Left.GetVal(), val.Right)
 
 				return nil
 			},
@@ -116,6 +124,10 @@ func downsweep(input, output []int, startVal int, tree ITree) {
 	}
 }
 
-func parallelPrefixSum(input, output []int, startVal, threshold int) {
+func parallelScan(
+	input, output []int,
+	startVal int,
+	threshold int,
+) {
 	downsweep(input, output, startVal, upsweep(input, 0, len(input), threshold))
 }
