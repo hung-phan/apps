@@ -16,11 +16,12 @@ func Parallel(fns ...func() Val) []Val {
 
 		go func(index int, fn func() Val) {
 			defer wg.Done()
-			defer m.Unlock()
+
+			result := fn()
 
 			m.Lock()
-
-			res[index] = fn()
+			res[index] = result
+			m.Unlock()
 		}(index, fn)
 	}
 
