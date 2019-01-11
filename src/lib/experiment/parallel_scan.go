@@ -48,7 +48,7 @@ func upsweepSequential(input []int, from, until int) int {
 
 // map func
 func upsweep(input []int, from, until int, threshold int) ITree {
-	if until-from <= threshold {
+	if until-from < threshold {
 		return Leaf{
 			From:  from,
 			Until: until,
