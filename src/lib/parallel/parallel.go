@@ -11,9 +11,9 @@ func Parallel(fns ...func() Val) []Val {
 		res = make([]Val, len(fns))
 	)
 
-	for index, fn := range fns {
-		wg.Add(1)
+	wg.Add(len(fns))
 
+	for index, fn := range fns {
 		go func(index int, fn func() Val) {
 			defer wg.Done()
 
