@@ -113,7 +113,7 @@ func downsweep(
 				return nil
 			},
 			func() parallel.Val {
-				downsweep(input, output, startVal + val.Left.GetVal(), val.Right)
+				downsweep(input, output, startVal+val.Left.GetVal(), val.Right)
 
 				return nil
 			},
