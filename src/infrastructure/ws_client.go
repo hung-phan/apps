@@ -72,7 +72,10 @@ func (wsClient *WSClient) readPump() {
 }
 
 func (wsClient *WSClient) gracefulShutdown() {
-	err := wsClient.sendCloseSignal()
+	wsClient.m.Lock()
+	defer wsClient.m.Unlock()
+
+	err := wsClient.conn.WriteMessage(websocket.CloseMessage, []byte{})
 
 	if err != nil {
 		Log.Error("fail to send close signal", zap.Error(err))
@@ -85,13 +88,6 @@ func (wsClient *WSClient) gracefulShutdown() {
 	}
 
 	wsClient.GetHub().Del(wsClient.GetID())
-}
-
-func (wsClient *WSClient) sendCloseSignal() error {
-	wsClient.m.Lock()
-	defer wsClient.m.Unlock()
-
-	return wsClient.conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 func NewWSClient(hub *ClientHub, id string, conn *websocket.Conn) *WSClient {
