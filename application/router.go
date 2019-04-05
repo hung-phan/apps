@@ -3,7 +3,7 @@ package application
 import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/hung-phan/apps/src/infrastructure"
+	"github.com/hung-phan/apps/infrastructure"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 	"net/http"

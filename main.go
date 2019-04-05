@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/hung-phan/apps/src/application"
-	"github.com/hung-phan/apps/src/infrastructure"
+	"github.com/hung-phan/apps/application"
+	"github.com/hung-phan/apps/infrastructure"
 	"os"
 	"os/signal"
 	"sync"

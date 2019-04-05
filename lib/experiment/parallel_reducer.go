@@ -1,7 +1,7 @@
 package experiment
 
 import (
-	"github.com/hung-phan/apps/src/lib/parallel"
+	"github.com/hung-phan/apps/lib/parallel"
 )
 
 func sequentialReduce(arr []int, from, until int) int {

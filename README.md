@@ -5,19 +5,19 @@
 ## Run
 
 ```bash
-$ go run src/main.go
+$ go run main.go
 ```
 
 ## Build
 
 ```bash
-$ go build src/main.go
+$ go build main.go
 $ ./main
 ```
 
 ## Test
 
 ```bash
-$ go tool vet .
+$ go vet .
 $ go test -v -race ./...
 ```

@@ -2,7 +2,7 @@ package experiment
 
 import (
 	"fmt"
-	"github.com/hung-phan/apps/src/lib/parallel"
+	"github.com/hung-phan/apps/lib/parallel"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

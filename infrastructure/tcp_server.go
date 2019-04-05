@@ -69,6 +69,8 @@ func StartTCPServer(
 				Log.Fatal("failed to TCP server:", zap.Error(err))
 			}
 
+			Log.Info("Shutdown TCP server")
+
 			wg.Done()
 
 			return

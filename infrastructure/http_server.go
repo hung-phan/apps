@@ -30,7 +30,6 @@ func StartHTTPServer(
 	<-stopSignal
 
 	DefaultWSHub.ExecuteAll(func(client Client) {
-		Log.Info("Shutdown client", zap.String("id", client.GetID()))
 		client.Shutdown()
 	})
 
