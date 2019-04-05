@@ -90,16 +90,16 @@ func (wsClient *WSClient) gracefulShutdown() {
 	wsClient.GetHub().Del(wsClient.GetID())
 }
 
-func NewWSClient(hub *ClientHub, id string, conn *websocket.Conn) *WSClient {
+func NewWSClient(id string, conn *websocket.Conn) *WSClient {
 	client := &WSClient{
 		baseClient: &baseClient{
 			id:  id,
-			hub: hub,
+			hub: DefaultWSHub,
 		},
 		conn: conn,
 	}
 
-	hub.Set(id, client)
+	DefaultWSHub.Set(id, client)
 
 	return client
 }

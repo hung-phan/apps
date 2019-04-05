@@ -5,14 +5,18 @@ import (
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
+	"sync"
 	"time"
 )
 
 func StartHTTPServer(
 	address string,
-	shutdownSignal chan bool,
+	stopSignal chan bool,
+	wg *sync.WaitGroup,
 	router *mux.Router,
 ) {
+	wg.Add(1)
+
 	server := &http.Server{Addr: address, Handler: router}
 
 	go func() {
@@ -23,7 +27,14 @@ func StartHTTPServer(
 		}
 	}()
 
-	<-shutdownSignal
+	<-stopSignal
+
+	DefaultWSHub.ExecuteAll(func(client Client) {
+		Log.Info("Shutdown client", zap.String("id", client.GetID()))
+		client.Shutdown()
+	})
+
+	Log.Info("Shutdown HTTP server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
@@ -32,4 +43,6 @@ func StartHTTPServer(
 	if err := server.Shutdown(ctx); err != nil {
 		Log.Fatal("failed to gracefulShutdown HTTP server:", zap.Error(err))
 	}
+
+	wg.Done()
 }

@@ -127,17 +127,17 @@ func CreateTCPConnection(address string) (*net.TCPConn, error) {
 	return conn, nil
 }
 
-func NewTCPClient(hub *ClientHub, address string, conn *net.TCPConn) *TCPClient {
+func NewTCPClient(address string, conn *net.TCPConn) *TCPClient {
 	client := &TCPClient{
 		baseClient: &baseClient{
 			id:  address,
-			hub: hub,
+			hub: DefaultTCPHub,
 		},
 		conn: conn,
 		rw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
 	}
 
-	hub.Set(address, client)
+	DefaultTCPHub.Set(address, client)
 
 	return client
 }

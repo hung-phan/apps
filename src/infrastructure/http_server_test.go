@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"math/rand"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 )
@@ -21,6 +22,7 @@ func TestStartHTTPServer(t *testing.T) {
 	t.Run("test StartHTTPServer", func(t *testing.T) {
 		var (
 			router            = mux.NewRouter()
+			wg                = &sync.WaitGroup{}
 			httpStopSignal    = make(chan bool)
 			webSocketUpgrader = websocket.Upgrader{
 				CheckOrigin: func(r *http.Request) bool {
@@ -57,7 +59,6 @@ func TestStartHTTPServer(t *testing.T) {
 				}
 
 				go wsConnectionHandler(NewWSClient(
-					NewHub(),
 					ksuid.New().String(),
 					conn,
 				))
@@ -67,6 +68,7 @@ func TestStartHTTPServer(t *testing.T) {
 		go StartHTTPServer(
 			"localhost:3000",
 			httpStopSignal,
+			wg,
 			router,
 		)
 
@@ -74,5 +76,6 @@ func TestStartHTTPServer(t *testing.T) {
 		jitter()
 
 		httpStopSignal <- true
+		wg.Wait()
 	})
 }

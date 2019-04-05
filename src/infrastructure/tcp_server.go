@@ -9,10 +9,12 @@ import (
 
 func StartTCPServer(
 	address string,
-	shutdownSignal chan bool,
-	hub *ClientHub,
+	stopSignal chan bool,
+	wg *sync.WaitGroup,
 	ch ClientHandler,
 ) {
+	wg.Add(1)
+
 	listener, err := net.Listen("tcp", address)
 
 	if err != nil {
@@ -50,13 +52,12 @@ func StartTCPServer(
 		select {
 		case conn := <-connCh:
 			go ch(NewTCPClient(
-				hub,
 				ksuid.New().String(),
 				conn,
 			))
 
-		case <-shutdownSignal:
-			hub.ExecuteAll(func(client Client) {
+		case <-stopSignal:
+			DefaultTCPHub.ExecuteAll(func(client Client) {
 				client.Shutdown()
 			})
 
@@ -67,6 +68,10 @@ func StartTCPServer(
 			if err := listener.Close(); err != nil {
 				Log.Fatal("failed to TCP server:", zap.Error(err))
 			}
+
+			wg.Done()
+
+			return
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 )
@@ -18,6 +19,7 @@ func TestStartTCPServer(t *testing.T) {
 
 	t.Run("test StartTCPServer", func(t *testing.T) {
 		var (
+			wg            = &sync.WaitGroup{}
 			tcpStopSignal = make(chan bool)
 			msg           = "Message"
 			assertError   = func(err error) {
@@ -50,7 +52,7 @@ func TestStartTCPServer(t *testing.T) {
 		go StartTCPServer(
 			"localhost:3001",
 			tcpStopSignal,
-			NewHub(),
+			wg,
 			tcpConnectionHandler,
 		)
 
@@ -74,5 +76,6 @@ func TestStartTCPServer(t *testing.T) {
 		assert.Equal(t, string(data[:len(data)-1]), msg)
 
 		tcpStopSignal <- true
+		wg.Wait()
 	})
 }

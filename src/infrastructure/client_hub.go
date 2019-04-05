@@ -4,6 +4,7 @@ import "sync"
 
 type ClientHub struct {
 	rwMutex sync.RWMutex
+	wg      sync.WaitGroup
 	clients map[string]Client
 }
 
@@ -33,12 +34,19 @@ func (ch *ClientHub) Del(key string) {
 }
 
 func (ch *ClientHub) ExecuteAll(fn ClientHandler) {
-	ch.rwMutex.RLock()
-	defer ch.rwMutex.RUnlock()
+	ch.rwMutex.Lock()
+	defer ch.rwMutex.Unlock()
 
 	for _, client := range ch.clients {
-		go fn(client)
+		ch.wg.Add(1)
+
+		go func(client Client) {
+			fn(client)
+			ch.wg.Done()
+		}(client)
 	}
+
+	ch.wg.Wait()
 }
 
 func NewHub() *ClientHub {

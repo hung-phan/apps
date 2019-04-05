@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-var (
-	DefaultTCPHub = infrastructure.NewHub()
-	DefaultWSHub  = infrastructure.NewHub()
-)
-
 func TCPConnectionHandler(tcpClient infrastructure.Client) {
 	ch := make(infrastructure.DataChannel)
 
