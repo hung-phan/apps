@@ -3,11 +3,10 @@ sudo: required
 language: go
 
 go:
-  - "1.11.x"
+  - "1.12.x"
 
 before_install:
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-- dep ensure
 
 cache:
   directories:
