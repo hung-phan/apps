@@ -28,7 +28,7 @@ func CreateRouter() *mux.Router {
 				return
 			}
 
-			go WSConnectionHandler(infrastructure.NewWSClient(
+			go ConnectionHandler(infrastructure.NewWSClient(
 				ksuid.New().String(),
 				conn,
 			))

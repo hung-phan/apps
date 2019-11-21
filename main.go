@@ -28,7 +28,7 @@ func main() {
 		":3001",
 		tcpStopSignal,
 		wg,
-		application.TCPConnectionHandler,
+		application.ConnectionHandler,
 	)
 
 	signal.Notify(stopSignal, syscall.SIGTERM)
