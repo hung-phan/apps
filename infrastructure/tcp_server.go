@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"github.com/segmentio/ksuid"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"net"
 	"sync"
@@ -25,17 +26,14 @@ func StartTCPServer(
 
 	var (
 		connCh     = make(chan *net.TCPConn)
-		m          = sync.Mutex{}
-		isShutdown = false
+		isShutdown = atomic.NewBool(false)
 	)
 
 	go func() {
 		for {
-			m.Lock()
-			if isShutdown {
+			if isShutdown.Load() {
 				break
 			}
-			m.Unlock()
 
 			conn, err := listener.Accept()
 
@@ -61,9 +59,7 @@ func StartTCPServer(
 				client.Shutdown()
 			})
 
-			m.Lock()
-			isShutdown = true
-			m.Unlock()
+			isShutdown.Swap(true)
 
 			if err := listener.Close(); err != nil {
 				Log.Fatal("failed to TCP server:", zap.Error(err))
